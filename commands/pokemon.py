@@ -3,7 +3,7 @@ import logging
 
 import inquirer
 
-from commands.interfaces import Command
+from commands.interface import Command
 from exceptions import PokemonCreationFailedException, EmptyPokemonSlotException, EditTeamCommandCloseException, \
     EditSlotCommandCloseException
 from pokemonbuilder import PokemonBuilder
