@@ -44,3 +44,11 @@ class EditSlotCommandCloseException(Exception):
 
 class PokemonLevelInvalidException(Exception):
     pass
+
+
+class CachedRequestNotExistException(Exception):
+    pass
+
+
+class DatabaseRowNotExistException(Exception):
+    pass
