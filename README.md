@@ -14,3 +14,4 @@ python main.py
 
 - Requests
 - Inquirer
+- CobblemonTrainer 0.9.12
