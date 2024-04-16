@@ -4,7 +4,7 @@ import logging
 import inquirer
 
 from commands.interface import Command
-from exceptions import PokemonCreationFailedException, EmptyPokemonSlotException, EditTeamCommandCloseException, \
+from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
     EditSlotCommandCloseException
 from pokemonbuilder import PokemonBuilder
 from pokemonwikiapi import PokeApi as PokemonWikiApi

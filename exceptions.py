@@ -25,10 +25,6 @@ class PokemonNotExistException(Exception):
         self.message = message
 
 
-class EmptyPokemonSlotException(Exception):
-    pass
-
-
 class MovesNotEnoughExistException(Exception):
     def __init__(self, moves):
         self.moves = moves
