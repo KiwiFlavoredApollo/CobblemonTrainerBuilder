@@ -1,12 +1,11 @@
 import json
 import logging
-import random
 
 import inquirer
 
 from commands.interface import Command
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException, PokemonLevelInvalidException, MovesNotEnoughExistException
+    EditSlotCommandCloseException, PokemonLevelInvalidException
 from pokemonbuilder import PokemonBuilder
 from pokemonwikiapi import PokeApi as PokemonWikiApi
 
