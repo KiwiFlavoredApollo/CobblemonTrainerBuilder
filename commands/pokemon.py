@@ -1,11 +1,12 @@
 import json
 import logging
+import random
 
 import inquirer
 
 from commands.interface import Command
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException
+    EditSlotCommandCloseException, PokemonLevelInvalidException, MovesNotEnoughExistException
 from pokemonbuilder import PokemonBuilder
 from pokemonwikiapi import PokeApi as PokemonWikiApi
 
@@ -113,7 +114,17 @@ class EditPokemonLevelCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pass
+        try:
+            pokemon = trainer.team[self._slot]
+            level = self._get_pokemon_level(pokemon)
+            PokemonBuilder.assert_valid_pokemon_level(level)
+            pokemon["level"] = level
+        except PokemonLevelInvalidException:
+            pass
+
+    def _get_pokemon_level(self, pokemon):
+        answer = inquirer.prompt([inquirer.Text("level", "Pokemon Level", default=pokemon["level"])])
+        return int(answer["level"])
 
 
 class EditPokemonAbilityCommand(Command):
@@ -121,7 +132,15 @@ class EditPokemonAbilityCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pass
+        pokemon = trainer.team[self._slot]
+        name = PokemonBuilder.get_pokemon_name(pokemon)
+        ability = self._get_pokemon_ability(name)
+        pokemon["ability"] = ability
+
+    def _get_pokemon_ability(self, name):
+        abilities = PokemonWikiApi().get_pokemon_abilities(name)
+        answer = inquirer.prompt([inquirer.List("ability", "Pokemon Ability", abilities)])
+        return answer["ability"]
 
 
 class EditPokemonNatureCommand(Command):
@@ -129,7 +148,14 @@ class EditPokemonNatureCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pass
+        pokemon = trainer.team[self._slot]
+        self._randomize_nature(pokemon)
+
+    def _randomize_nature(self, pokemon):
+        answer = inquirer.prompt([inquirer.Confirm("confirm", message="Randomize nature?", default=False)])
+        if answer["confirm"]:
+            pokemon["nature"] = PokemonBuilder.select_random_nature()
+
 
 
 class EditPokemonMovesetCommand(Command):
@@ -137,8 +163,15 @@ class EditPokemonMovesetCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pass
+        pokemon = trainer.team[self._slot]
+        self._randomize_moveset(pokemon)
 
+    def _randomize_moveset(self, pokemon):
+        answer = inquirer.prompt([inquirer.Confirm("confirm", message="Randomize moveset?", default=False)])
+        if answer["confirm"]:
+            name = PokemonBuilder.get_pokemon_name(pokemon)
+            moves = PokemonWikiApi().get_pokemon_moves(name)
+            pokemon["moveset"] = PokemonBuilder.select_random_moveset(moves)
 
 class PrintPokemonCommand(Command):
     def __init__(self, slot):
