@@ -10,6 +10,14 @@ GUI provided by the mod itself isn't bad, but it feels quite cumbersome when add
 python main.py
 ```
 
+### Exporting to json files
+
+Scripts automatically create `export` directory for you
+
+### Importing from json files
+
+If you want to import `.json` files, create `import` directory at the root of the project (where `main.py` resides) and put `.json` files there
+
 ## Dependency
 
 - Requests
