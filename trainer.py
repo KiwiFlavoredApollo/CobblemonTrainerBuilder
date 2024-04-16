@@ -28,12 +28,8 @@ class Trainer:
     def get_pokemon_names(self):
         names = []
         for pokemon in self.properties[self.TEAM]:
-            n = self._remove_cobblemon_prefix_from_pokemon_name(pokemon["species"])
-            names.append(n)
+            names.append(PokemonBuilder.get_pokemon_name(pokemon))
         return names
-
-    def _remove_cobblemon_prefix_from_pokemon_name(self, name):
-        return name.replace(PokemonBuilder.COBBLEMON_PREFIX, "")
 
     def set_win_command(self, win_command):
         self.properties[self.WIN_COMMAND] = win_command
