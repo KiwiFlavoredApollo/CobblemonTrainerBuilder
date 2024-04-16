@@ -1,0 +1,24 @@
+{
+  "species": "cobblemon:ditto",
+  "gender": "FEMALE",
+  "level": 18,
+  "nature": "cobblemon:calm",
+  "ability": "blaze",
+  "moveset": [
+    "scratch",
+    "growl",
+    "ember",
+    "dragonrage"
+  ],
+  "ivs": {
+    "hp": 8,
+    "attack": 9,
+    "defence": 5,
+    "special_attack": 4,
+    "special_defence": 22,
+    "speed": 10
+  },
+  "evs": {},
+  "shiny": false,
+  "heldItem": "minecraft:air"
+}
