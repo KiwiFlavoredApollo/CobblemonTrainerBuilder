@@ -1,81 +1,71 @@
-import json
 import logging
 
+from common import load_json_file
 from exceptions import PokemonNotExistSlotException
-from jsonfileloader import load_json_file
 from pokemonbuilder import PokemonBuilder
-from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 
 class Trainer:
-    TRAINER_TEMPLATE_FILENAME = 'trainer-template.json'
+    DEFAULT_TRAINER_FILENAME = 'defaults/trainer.json'
+
+    TEAM = "team"
+    WIN_COMMAND = "winCommand"
+    LOSS_COMMAND = "lossCommand"
+    CAN_ONLY_BEAT_ONCE = "canOnlyBeatOnce"
+    COOLDOWN_SECONDS = "cooldownSeconds"
+    PARTY_MAXIMUM_LEVEL = "partyMaximumLevel"
+    DEFEAT_REQUIRED_TRAINERS = "defeatRequiredTrainers"
 
     def __init__(self, name):
         self.name = name
 
         self._logger = logging.getLogger(__name__)
-        self._team = self._load_team_from_template()
-        self._win_command = self._load_win_command_from_template()
-        self._can_only_beat_once = False  # TODO
-
-    def _load_team_from_template(self):
-        EMPTY_TEAM = []
-        try:
-            template = load_json_file(self.TRAINER_TEMPLATE_FILENAME)
-            return template["team"]
-        except FileNotFoundError:
-            self._logger.debug("Following file could not be found: " + self.TRAINER_TEMPLATE_FILENAME)
-            return EMPTY_TEAM
+        self._properties = load_json_file(self.DEFAULT_TRAINER_FILENAME)
 
     def add_pokemon_to_team(self, pokemon):
-        self._team.append(pokemon)
-
-    def _load_win_command_from_template(self):
-        EMPTY_WIN_COMMAND = ""
-        try:
-            template = load_json_file(self.TRAINER_TEMPLATE_FILENAME)
-            return template["winCommand"]
-        except FileNotFoundError:
-            return EMPTY_WIN_COMMAND
+        self._properties[self.TEAM].append(pokemon)
 
     def dict(self):
-        return {
-            "team": self._team,
-            "winCommand": self._win_command
-        }
+        return self._properties
 
     def get_pokemon_names(self):
         names = []
-        for pokemon in self._team:
-            names.append(pokemon["species"].replace(PokemonBuilder.COBBLEMON_PREFIX, ""))
+        for pokemon in self._properties[self.TEAM]:
+            n = self._remove_cobblemon_prefix_from_pokemon_name(pokemon["species"])
+            names.append(n)
         return names
 
+    def _remove_cobblemon_prefix_from_pokemon_name(self, name):
+        return name.replace(PokemonBuilder.COBBLEMON_PREFIX, "")
+
     def set_win_command(self, win_command):
-        self._win_command = win_command
+        self._properties[self.WIN_COMMAND] = win_command
 
-    def set_can_only_beat_once(self):
-        self._can_only_beat_once = True
-
-    def unset_can_only_beat_once(self):
-        self._can_only_beat_once = False
+    def set_can_only_beat_once(self, can_only_beat_once):
+        self._properties[self.CAN_ONLY_BEAT_ONCE] = can_only_beat_once
 
     def reset(self):
-        self._team = self._load_team_from_template()
-        self._win_command = self._load_win_command_from_template()
-        self._can_only_beat_once = False  # TODO
+        self._properties = load_json_file(self.DEFAULT_TRAINER_FILENAME)
 
     def remove_pokemon(self, slot):
         try:
             self._assert_slot_exist_pokemon(slot)
-            self._team.pop(slot)
+            self._properties[self.TEAM].pop(slot)
         except PokemonNotExistSlotException:
             pass
 
     def _assert_slot_exist_pokemon(self, slot):
-        maximum_slot = len(self._team) - 1
+        maximum_slot = len(self._properties[self.TEAM]) - 1
         if maximum_slot < slot:
             raise PokemonNotExistSlotException
 
     @property
     def team(self):
-        return self._team
+        return self._properties[self.TEAM]
+
+    def import_from_json_file(self, filepath):
+        try:
+            self._properties = load_json_file(filepath)
+        except FileNotFoundError:
+            self._logger.debug("Following file could not be found: " + self.DEFAULT_TRAINER_FILENAME)
+
