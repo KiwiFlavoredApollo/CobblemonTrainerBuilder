@@ -1,7 +1,15 @@
 import/
 export/
+logs/
 *.db
+TODO.md
 
+# pyinstaller
+dist/
+build/
+*.spec
+
+# pycharm
 .idea/workspace.xml
 .idea/usage.statistics.xml
 .idea/shelf/
