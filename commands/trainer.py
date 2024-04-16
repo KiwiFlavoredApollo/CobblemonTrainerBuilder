@@ -13,14 +13,14 @@ class EditTrainerCommand(Command):
 
     def _edit_trainer(self, trainer):
         while True:
-            choices = [
+            COMMANDS = [
                 ("Return", CloseEditTrainerCommand()),
                 ("Reset", ResetTrainerCommand()),
                 ("Rename", RenameTrainerCommand()),
                 ("winCommand", EditWinCommandCommand()),
                 ("canOnlyBeatOnce", EditCanOnlyBeatOnceCommand())
             ]
-            answer = inquirer.prompt([inquirer.List("command", "Select to edit", choices)])
+            answer = inquirer.prompt([inquirer.List("command", "Select to edit", COMMANDS)])
             answer["command"].execute(trainer)
 
 
