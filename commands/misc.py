@@ -3,9 +3,9 @@ import os
 
 import inquirer
 
-from commands.interfaces import Command
+from commands.interface import Command
 from exceptions import TrainerBuilderCloseException
-from jsonfileloader import is_valid_json_file
+from common import is_valid_json_file
 
 
 class PrintTrainerCommand(Command):
@@ -29,8 +29,8 @@ class ExportTrainerCommand(Command):
 class ImportTrainerCommand(Command):
     def execute(self, trainer):
         valid_json_files = self._get_valid_json_files()
-        answer = inquirer.prompt([inquirer.List("file", "Select to import", valid_json_files)])
-        print(answer["file"])  # TODO
+        answer = inquirer.prompt([inquirer.List("filepath", "Select to import", valid_json_files)])
+        trainer.import_from_json_file(answer["filepath"])
 
     def _get_valid_json_files(self):
         import_dir = "import"
