@@ -23,9 +23,9 @@ class TrainerBuilder:
     def _build_trainer(self):
         while True:
             COMMANDS = [
+                ("Print", PrintTrainerCommand()),
                 ("Trainer", EditTrainerCommand()),
                 ("Pokemon", EditTeamCommand()),
-                ("Print", PrintTrainerCommand()),
                 ("Export", ExportTrainerCommand()),
                 ("Import", ImportTrainerCommand()),
                 ("Close", CloseTrainerBuilderCommand())
