@@ -75,3 +75,7 @@ class Trainer:
         maximum_slot = len(self._team) - 1
         if maximum_slot < slot:
             raise PokemonNotExistSlotException
+
+    @property
+    def team(self):
+        return self._team
