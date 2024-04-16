@@ -42,19 +42,15 @@ class RenameTrainerCommand(Command):
 
 class EditWinCommandCommand(Command):
     def execute(self, trainer):
-        answer = inquirer.prompt(inquirer.Text("command", "Type winCommand"))
+        answer = inquirer.prompt([inquirer.Text("command", "Type winCommand")])
         trainer.set_win_command(answer["command"])
 
 
 class EditCanOnlyBeatOnceCommand(Command):
     def execute(self, trainer):
-        answer = inquirer.prompt(inquirer.Confirm("command", message="Should trainer be beaten only once?"))
+        answer = inquirer.prompt([inquirer.Confirm("command", message="Should trainer be beaten only once?")])
         if answer["command"]:
             trainer.set_can_only_beat_once()
         else:
             trainer.unset_can_only_beat_once()
 
-
-class ImportTrainerCommand(Command):
-    def execute(self, trainer):
-        pass
