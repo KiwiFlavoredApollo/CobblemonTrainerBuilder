@@ -40,3 +40,7 @@ class PokemonNotExistSlotException(Exception):
 
 class EditSlotCommandCloseException(Exception):
     pass
+
+
+class PokemonLevelInvalidException(Exception):
+    pass
