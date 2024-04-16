@@ -1,16 +1,16 @@
 import json
 import os
 
-from commands.interfaces import TrainerBuilderCommand
+from commands.interfaces import Command
 from exceptions import TrainerBuilderCloseException
 
 
-class PrintTrainerCommand(TrainerBuilderCommand):
+class PrintTrainerCommand(Command):
     def execute(self, trainer):
         print(json.dumps(trainer.dict(), indent=4))
 
 
-class ExportTrainerCommand(TrainerBuilderCommand):
+class ExportTrainerCommand(Command):
     def execute(self, trainer):
         export = "export"
         filename = trainer.name + ".json"
@@ -23,6 +23,6 @@ class ExportTrainerCommand(TrainerBuilderCommand):
             json.dump(trainer.dict(), file, indent=4)
 
 
-class CloseTrainerBuilderCommand(TrainerBuilderCommand):
+class CloseTrainerBuilderCommand(Command):
     def execute(self, trainer):
         raise TrainerBuilderCloseException

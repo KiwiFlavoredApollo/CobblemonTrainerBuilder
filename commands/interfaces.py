@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class TrainerBuilderCommand(ABC):
+class Command(ABC):
     @abstractmethod
     def execute(self, trainer):
         pass

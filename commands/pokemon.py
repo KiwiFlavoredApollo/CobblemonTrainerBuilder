@@ -1,15 +1,16 @@
+import json
 import logging
 
 import inquirer
 
-from commands.interfaces import TrainerBuilderCommand
+from commands.interfaces import Command
 from exceptions import PokemonCreationFailedException, EmptyPokemonSlotException, EditTeamCommandCloseException, \
     EditSlotCommandCloseException
 from pokemonbuilder import PokemonBuilder
 from pokemonwikiapi import PokeApi as PokemonWikiApi
 
 
-class EditTeamCommand(TrainerBuilderCommand):
+class EditTeamCommand(Command):
     def execute(self, trainer):
         try:
             self._edit_team(trainer)
@@ -38,14 +39,14 @@ class EditTeamCommand(TrainerBuilderCommand):
         return choices
 
 
-class ConfirmAddPokemonCommand(TrainerBuilderCommand):
+class ConfirmAddPokemonCommand(Command):
     def execute(self, trainer):
         answer = inquirer.prompt([inquirer.Confirm("add", message="Add Pokemon?", default=False)])
         if answer["add"]:
             AddPokemonCommand().execute(trainer)
 
 
-class AddPokemonCommand(TrainerBuilderCommand):
+class AddPokemonCommand(Command):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ class AddPokemonCommand(TrainerBuilderCommand):
         return answer["name"].lower()
 
 
-class EditSlotCommand(TrainerBuilderCommand):
+class EditSlotCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
@@ -76,6 +77,7 @@ class EditSlotCommand(TrainerBuilderCommand):
         while True:
             COMMANDS = [
                 ("Return", CloseEditSlotCommand()),
+                ("Print", PrintPokemonCommand(self._slot)),
                 ("Level", EditPokemonLevelCommand(self._slot)),
                 ("Ability", EditPokemonAbilityCommand(self._slot)),
                 ("Nature", EditPokemonNatureCommand(self._slot)),
@@ -86,12 +88,12 @@ class EditSlotCommand(TrainerBuilderCommand):
             answer["command"].execute(trainer)
 
 
-class CloseEditSlotCommand(TrainerBuilderCommand):
+class CloseEditSlotCommand(Command):
     def execute(self, trainer):
         raise EditSlotCommandCloseException
 
 
-class RemovePokemonCommand(TrainerBuilderCommand):
+class RemovePokemonCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
@@ -101,12 +103,12 @@ class RemovePokemonCommand(TrainerBuilderCommand):
             trainer.remove_pokemon(self._slot)
 
 
-class CloseEditTeamCommand(TrainerBuilderCommand):
+class CloseEditTeamCommand(Command):
     def execute(self, trainer):
         raise EditTeamCommandCloseException
 
 
-class EditPokemonLevelCommand(TrainerBuilderCommand):
+class EditPokemonLevelCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
@@ -114,7 +116,7 @@ class EditPokemonLevelCommand(TrainerBuilderCommand):
         pass
 
 
-class EditPokemonAbilityCommand(TrainerBuilderCommand):
+class EditPokemonAbilityCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
@@ -122,7 +124,7 @@ class EditPokemonAbilityCommand(TrainerBuilderCommand):
         pass
 
 
-class EditPokemonNatureCommand(TrainerBuilderCommand):
+class EditPokemonNatureCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
@@ -130,9 +132,18 @@ class EditPokemonNatureCommand(TrainerBuilderCommand):
         pass
 
 
-class EditPokemonMovesetCommand(TrainerBuilderCommand):
+class EditPokemonMovesetCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
     def execute(self, trainer):
         pass
+
+
+class PrintPokemonCommand(Command):
+    def __init__(self, slot):
+        self._slot = slot
+
+    def execute(self, trainer):
+        json_pretty = json.dumps(trainer.team[self._slot], indent=4)
+        print(json_pretty)
