@@ -2,9 +2,9 @@ import logging
 
 import inquirer
 
-from commands.misc import PrintTrainerCommand, CloseTrainerBuilderCommand, ExportTrainerCommand
+from commands.misc import PrintTrainerCommand, CloseTrainerBuilderCommand, ExportTrainerCommand, ImportTrainerCommand
 from commands.pokemon import EditTeamCommand
-from commands.trainer import EditTrainerCommand, ImportTrainerCommand
+from commands.trainer import EditTrainerCommand
 from exceptions import TrainerBuilderCloseException
 from trainer import Trainer
 
@@ -23,12 +23,12 @@ class TrainerBuilder:
     def _build_trainer(self):
         while True:
             COMMANDS = [
-                ("trainer", EditTrainerCommand()),
-                ("pokemon", EditTeamCommand()),
-                ("print", PrintTrainerCommand()),
-                ("export", ExportTrainerCommand()),
-                ("import", ImportTrainerCommand()),
-                ("close", CloseTrainerBuilderCommand())
+                ("Trainer", EditTrainerCommand()),
+                ("Pokemon", EditTeamCommand()),
+                ("Print", PrintTrainerCommand()),
+                ("Export", ExportTrainerCommand()),
+                ("Import", ImportTrainerCommand()),
+                ("Close", CloseTrainerBuilderCommand())
             ]
             answer = inquirer.prompt([inquirer.List("command", "Select command", COMMANDS)])
             answer["command"].execute(self._trainer)
