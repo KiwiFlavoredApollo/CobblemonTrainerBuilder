@@ -1,14 +1,16 @@
 import logging
 import random
 
-from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException
-from common import load_json_file
+from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException, \
+    PokemonLevelInvalidException
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 
 class PokemonBuilder:
     COBBLEMON_PREFIX = "cobblemon:"
     MOVESET_SIZE = 4
+    MAX_LEVEL = 100
+    MIN_LEVEL = 1
 
     def __init__(self, api):
         self._logger = logging.getLogger(__name__)
@@ -39,17 +41,21 @@ class PokemonBuilder:
             raise PokemonGenderlessException
 
     def _create_random_level(self):
-        return random.randint(1, 100)
+        return random.randint(self.MIN_LEVEL, self.MAX_LEVEL)
 
     def _create_random_nature(self):
-        natures = [
+        return PokemonBuilder.select_random_nature()
+
+    @staticmethod
+    def select_random_nature():
+        NATURES = [
             "hardy", "lonely", "brave", "adamant", "naughty",
             "bold", "docile", "relaxed", "impish", "lax",
             "timid", "hasty", "serious", "jolly", "naive",
             "modest", "mild", "quiet", "bashful", "rash",
             "calm", "gentle", "sassy", "careful", "quirky"
         ]
-        return self.COBBLEMON_PREFIX + random.choice(natures)
+        return PokemonBuilder.COBBLEMON_PREFIX + random.choice(NATURES)
 
     def _create_random_ability(self, name):
         abilities = self._api.get_pokemon_abilities(name)
@@ -71,15 +77,20 @@ class PokemonBuilder:
         return random.randint(MIN_IV_VALUE, MAX_IV_VALUE)
 
     def _create_random_moveset(self, name):
+        moves = self._api.get_pokemon_moves(name)
+        return PokemonBuilder.select_random_moveset(moves)
+
+    @staticmethod
+    def select_random_moveset(moves):
         try:
-            moves = self._api.get_pokemon_moves(name)
-            self._assert_exist_enough_moves(moves)
-            return random.sample(moves, self.MOVESET_SIZE)
+            PokemonBuilder._assert_exist_enough_moves(moves)
+            return random.sample(moves, PokemonBuilder.MOVESET_SIZE)
         except MovesNotEnoughExistException as e:
             return e.moves
 
-    def _assert_exist_enough_moves(self, moves):
-        if len(moves) < self.MOVESET_SIZE:
+    @staticmethod
+    def _assert_exist_enough_moves(moves):
+        if len(moves) < PokemonBuilder.MOVESET_SIZE:
             raise MovesNotEnoughExistException(moves)
 
     def _create_empty_evs(self):
@@ -104,3 +115,12 @@ class PokemonBuilder:
             "shiny": self._create_non_shiny(),
             "heldItem": self._create_empty_held_item()
         }
+
+    @staticmethod
+    def assert_valid_pokemon_level(level):
+        if not PokemonBuilder.MIN_LEVEL <= level <= PokemonBuilder.MAX_LEVEL:
+            raise PokemonLevelInvalidException
+
+    @staticmethod
+    def get_pokemon_name(pokemon):
+        return pokemon["species"].replace(PokemonBuilder.COBBLEMON_PREFIX, "")
