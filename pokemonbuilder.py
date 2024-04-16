@@ -2,12 +2,11 @@ import logging
 import random
 
 from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException
-from jsonfileloader import load_json_file
+from common import load_json_file
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 
 class PokemonBuilder:
-    POKEMON_TEMPLATE_FILENAME = "pokemon-template.json"
     COBBLEMON_PREFIX = "cobblemon:"
     MOVESET_SIZE = 4
 
@@ -19,29 +18,11 @@ class PokemonBuilder:
         try:
             self._api.assert_exist_connection()
             self._api.assert_exist_pokemon(name)
-
-            pokemon = self._load_pokemon_template()
-            pokemon["species"] = self._create_pokemon_species(name)
-            pokemon["gender"] = self._create_random_gender(name)
-            pokemon["level"] = self._create_random_level()
-            pokemon["nature"] = self._create_random_nature()
-            pokemon["ability"] = self._create_random_ability(name)
-            pokemon["moveset"] = self._create_random_moveset(name)
-            pokemon["ivs"] = self._create_random_ivs()
-
-            return pokemon
+            return self._create_random_pokemon(name)
         except PokemonWikiConnectionNotExistException as e:
             raise PokemonCreationFailedException(e.message)
         except PokemonNotExistException as e:
             raise PokemonCreationFailedException(e.message)
-
-    def _load_pokemon_template(self):
-        EMPTY_POKEMON = {}
-        try:
-            return load_json_file(self.POKEMON_TEMPLATE_FILENAME)
-        except FileNotFoundError:
-            self._logger.debug("")
-            return EMPTY_POKEMON
 
     def _create_pokemon_species(self, name):
         return self.COBBLEMON_PREFIX + name
@@ -100,3 +81,26 @@ class PokemonBuilder:
     def _assert_exist_enough_moves(self, moves):
         if len(moves) < self.MOVESET_SIZE:
             raise MovesNotEnoughExistException(moves)
+
+    def _create_empty_evs(self):
+        return {}
+
+    def _create_non_shiny(self):
+        return False
+
+    def _create_empty_held_item(self):
+        return "minecraft:air"
+
+    def _create_random_pokemon(self, name):
+        return {
+            "species": self._create_pokemon_species(name),
+            "gender": self._create_random_gender(name),
+            "level": self._create_random_level(),
+            "nature": self._create_random_nature(),
+            "ability": self._create_random_ability(name),
+            "moveset": self._create_random_moveset(name),
+            "ivs": self._create_random_ivs(),
+            "evs": self._create_empty_evs(),
+            "shiny": self._create_non_shiny(),
+            "heldItem": self._create_empty_held_item()
+        }
