@@ -1,6 +1,6 @@
 import inquirer
 
-from commands.interfaces import Command
+from commands.interface import Command
 from exceptions import EditTrainerCommandCloseException
 
 
@@ -48,9 +48,7 @@ class EditWinCommandCommand(Command):
 
 class EditCanOnlyBeatOnceCommand(Command):
     def execute(self, trainer):
-        answer = inquirer.prompt([inquirer.Confirm("command", message="Should trainer be beaten only once?")])
-        if answer["command"]:
-            trainer.set_can_only_beat_once()
-        else:
-            trainer.unset_can_only_beat_once()
+        answer = inquirer.prompt(
+            [inquirer.Confirm("command", message="Should trainer be beaten only once?", default=False)])
+        trainer.set_can_only_beat_once(answer["command"])
 
