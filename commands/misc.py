@@ -27,25 +27,41 @@ class ExportTrainerCommand(Command):
 
 
 class ImportTrainerCommand(Command):
+    IMPORT_DIR = "import"
+
     def execute(self, trainer):
-        valid_json_files = self._get_valid_json_files()
-        answer = inquirer.prompt([inquirer.List("filepath", "Select to import", valid_json_files)])
-        trainer.import_from_json_file(answer["filepath"])
+        selection = [("Return", CloseImportTrainerCommand())]
+        json_files = self._get_valid_json_files()
+        selection += [self._get_set_of_json_file_and_command(jf) for jf in json_files]
+        answer = inquirer.prompt([inquirer.List("command", "Select to import", selection)])
+        answer["command"].execute(trainer)
 
     def _get_valid_json_files(self):
-        import_dir = "import"
-        filesets = [self._get_fileset(import_dir, f) for f in os.listdir(import_dir)]
-        return list(filter(self._is_valid_json_file, filesets))
+        return list(filter(self._is_valid_json_file, os.listdir(self.IMPORT_DIR)))
 
-    def _get_fileset(self, import_dir, file):
-        filepath = os.path.join(import_dir, file)
-        return file, filepath
+    def _is_valid_json_file(self, filename):
+        return is_valid_json_file(self._get_filepath(filename))
 
-    def _is_valid_json_file(self, fileset):
-        filepath = fileset[1]
-        return is_valid_json_file(filepath)
+    def _get_set_of_json_file_and_command(self, filename):
+        return filename, ImportTrainerFileCommand(self._get_filepath(filename))
+
+    def _get_filepath(self, filename):
+        return os.path.join(self.IMPORT_DIR, filename)
 
 
 class CloseTrainerBuilderCommand(Command):
     def execute(self, trainer):
         raise TrainerBuilderCloseException
+
+
+class CloseImportTrainerCommand(Command):
+    def execute(self, trainer):
+        pass
+
+
+class ImportTrainerFileCommand(Command):
+    def __init__(self, filepath):
+        self._filepath = filepath
+
+    def execute(self, trainer):
+        trainer.import_from_json_file(self._filepath)

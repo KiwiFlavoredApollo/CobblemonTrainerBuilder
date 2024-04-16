@@ -66,6 +66,7 @@ class Trainer:
     def import_from_json_file(self, filepath):
         try:
             self._properties = load_json_file(filepath)
+            self._logger.debug("Imported {}".format(filepath))
         except FileNotFoundError:
             self._logger.debug("Following file could not be found: " + self.DEFAULT_TRAINER_FILENAME)
 
