@@ -5,11 +5,10 @@ import inquirer
 
 from commands.interface import Command
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException, PokemonLevelInvalidException
+    EditSlotCommandCloseException, PokemonLevelInvalidException, PokemonNotExistSlotException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
-from trainer import get_pokemon_names
 
 
 class EditTeamCommand(Command):
@@ -21,25 +20,48 @@ class EditTeamCommand(Command):
 
     def _edit_team(self, trainer):
         while True:
-            buttons = self._create_buttons(trainer)
+            team = trainer.properties["team"]
+            buttons = [
+                ("Return", CloseEditTeamCommand()),
+                (self._get_button_name(team, 0), self._get_button_command(team, 0)),
+                (self._get_button_name(team, 1), self._get_button_command(team, 1)),
+                (self._get_button_name(team, 2), self._get_button_command(team, 2)),
+                (self._get_button_name(team, 3), self._get_button_command(team, 3)),
+                (self._get_button_name(team, 4), self._get_button_command(team, 4)),
+                (self._get_button_name(team, 5), self._get_button_command(team, 5)),
+                ("TeamLevel", EditTeamLevelCommand()),
+            ]
             answer = inquirer.prompt([inquirer.List("button", "Select Pokemon", buttons)])
             answer["button"].execute(trainer)
 
-    def _create_buttons(self, trainer):
-        buttons = self._create_slots(trainer)
-        buttons.insert(0, ("Return", CloseEditTeamCommand()))
-        return buttons
+    def _get_button_name(self, team, slot):
+        try:
+            self._assert_exist_pokemon(team, slot)
+            cap_name = self._get_capitalized_pokemon_name(team, slot)
+            return self._prepend_slot_number(cap_name, slot)
+        except PokemonNotExistSlotException:
+            return self._prepend_slot_number("Empty", slot)
 
-    def _create_slots(self, trainer):
-        slots = [(name.capitalize(), EditSlotCommand(index))
-                 for index, name in enumerate(get_pokemon_names(trainer))]
-        slots = self._fill_empty_slots(slots)
-        return slots
+    def _assert_exist_pokemon(self, team, slot):
+        try:
+            team[slot]
+        except IndexError:
+            raise PokemonNotExistSlotException
 
-    def _fill_empty_slots(self, choices):
-        while len(choices) < 6:
-            choices.append(("Empty", AddPokemonCommand()))
-        return choices
+    def _prepend_slot_number(self, string, slot):
+        delimiter = " "
+        return delimiter.join(["[{}]".format(slot + 1), string])
+
+    def _get_capitalized_pokemon_name(self, team, slot):
+        name = get_pokemon_name(team[slot])
+        return name.capitalize()
+
+    def _get_button_command(self, team, slot):
+        try:
+            self._assert_exist_pokemon(team, slot)
+            return EditSlotCommand(slot)
+        except PokemonNotExistSlotException:
+            return AddPokemonCommand()
 
 
 class ConfirmAddPokemonCommand(Command):
@@ -127,13 +149,13 @@ class EditPokemonLevelCommand(Command):
         try:
             team = trainer.properties["team"]
             pokemon = team[self._slot]
-            level = self._get_pokemon_level(pokemon)
+            level = self._ask_pokemon_level(pokemon)
             assert_valid_pokemon_level(level)
             pokemon["level"] = level
         except PokemonLevelInvalidException:
             pass
 
-    def _get_pokemon_level(self, pokemon):
+    def _ask_pokemon_level(self, pokemon):
         answer = inquirer.prompt([inquirer.Text("level", "Pokemon Level", default=pokemon["level"])])
         return int(answer["level"])
 
@@ -146,10 +168,10 @@ class EditPokemonAbilityCommand(Command):
         team = trainer.properties["team"]
         pokemon = team[self._slot]
         name = get_pokemon_name(pokemon)
-        ability = self._get_pokemon_ability(name)
+        ability = self._ask_pokemon_ability(name)
         pokemon["ability"] = ability
 
-    def _get_pokemon_ability(self, name):
+    def _ask_pokemon_ability(self, name):
         abilities = PokemonWikiApi().get_pokemon_abilities(name)
         answer = inquirer.prompt([inquirer.List("ability", "Pokemon Ability", abilities)])
         return answer["ability"]
@@ -195,3 +217,19 @@ class PrintPokemonCommand(Command):
         team = trainer.properties["team"]
         json_pretty = json.dumps(team[self._slot], indent=2)
         print(json_pretty)
+
+
+class EditTeamLevelCommand(Command):
+    def execute(self, trainer):
+        try:
+            level = self._ask_team_level()
+            team = trainer.properties["team"]
+            assert_valid_pokemon_level(level)
+            for pokemon in team:
+                pokemon["level"] = level
+        except PokemonLevelInvalidException:
+            pass
+
+    def _ask_team_level(self):
+        answer = inquirer.prompt([inquirer.Text("level", "Team Level")])
+        return int(answer["level"])
