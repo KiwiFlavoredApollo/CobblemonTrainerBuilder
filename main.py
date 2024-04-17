@@ -37,4 +37,4 @@ logging.basicConfig(filename=get_log_filepath(),
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    TrainerGenerator().open_trainer_builder_prompt()
+    TrainerGenerator().run()

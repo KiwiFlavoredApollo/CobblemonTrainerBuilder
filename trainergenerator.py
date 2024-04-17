@@ -14,7 +14,7 @@ class TrainerGenerator:
         self._logger = logging.getLogger(__name__)
         self._trainer = Trainer("trainer")
 
-    def open_trainer_builder_prompt(self):
+    def run(self):
         try:
             self._open_command_prompt()
         except TrainerBuilderCloseException:
