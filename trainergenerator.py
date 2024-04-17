@@ -16,11 +16,11 @@ class TrainerGenerator:
 
     def open_trainer_builder_prompt(self):
         try:
-            self._build_trainer()
+            self._open_command_prompt()
         except TrainerBuilderCloseException:
             pass
 
-    def _build_trainer(self):
+    def _open_command_prompt(self):
         while True:
             COMMANDS = [
                 ("Print", PrintTrainerCommand()),
