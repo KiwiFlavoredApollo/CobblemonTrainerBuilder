@@ -78,6 +78,7 @@ class PokeApi(PokemonWikiApi):
 
     def assert_exist_connection(self):
         try:
+            # TODO getting responses from cache does not make sense
             self._get_response(self.API_POKEMON_SPECIES_URL_PREFIX)
         except requests.ConnectionError:
             raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
