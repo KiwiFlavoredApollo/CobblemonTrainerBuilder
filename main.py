@@ -5,14 +5,17 @@ from datetime import datetime
 from common import LOG_DIR, EXPORT_DIR, IMPORT_DIR
 from trainergenerator import TrainerGenerator
 
+
 def create_log_dir_if_not_exist():
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
 
+
 def create_export_dir_if_not_exist():
     if not os.path.exists(EXPORT_DIR):
         os.makedirs(EXPORT_DIR)
-        
+
+
 def create_import_dir_if_not_exist():
     if not os.path.exists(IMPORT_DIR):
         os.makedirs(IMPORT_DIR)
