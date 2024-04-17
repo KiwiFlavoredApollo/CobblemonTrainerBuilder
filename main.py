@@ -2,11 +2,8 @@ import logging
 import os
 from datetime import datetime
 
+from common import LOG_DIR, EXPORT_DIR, IMPORT_DIR
 from trainergenerator import TrainerGenerator
-
-LOG_DIR = "logs"
-EXPORT_DIR = "export"
-IMPORT_DIR = "import"
 
 def create_log_dir_if_not_exist():
     if not os.path.exists(LOG_DIR):

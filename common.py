@@ -3,6 +3,10 @@ import logging
 import os
 import sys
 
+LOG_DIR = "logs"
+EXPORT_DIR = "export"
+IMPORT_DIR = "import"
+
 logger = logging.getLogger(__name__)
 
 

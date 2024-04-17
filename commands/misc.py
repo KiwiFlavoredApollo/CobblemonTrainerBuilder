@@ -6,7 +6,7 @@ import inquirer
 
 from commands.interface import Command
 from exceptions import TrainerBuilderCloseException
-from common import is_valid_json_file, load_json_file
+from common import is_valid_json_file, load_json_file, EXPORT_DIR, IMPORT_DIR
 
 
 class PrintTrainerCommand(Command):
@@ -15,8 +15,6 @@ class PrintTrainerCommand(Command):
 
 
 class ExportTrainerCommand(Command):
-    EXPORT_DIR = "export"
-
     def __init__(self):
         self._logger = logging.getLogger(__name__)
 
@@ -28,8 +26,8 @@ class ExportTrainerCommand(Command):
             self._export_json_file(trainer)
 
     def _export_json_file(self, trainer):
-        if not os.path.exists(self.EXPORT_DIR):
-            os.makedirs(self.EXPORT_DIR)
+        if not os.path.exists(EXPORT_DIR):
+            os.makedirs(EXPORT_DIR)
 
         filename = self._get_filename(trainer)
         filepath = self._get_filepath(filename)
@@ -43,7 +41,7 @@ class ExportTrainerCommand(Command):
         return trainer.name + ".json"
 
     def _get_filepath(self, filename):
-        return os.path.join(self.EXPORT_DIR, filename)
+        return os.path.join(EXPORT_DIR, filename)
 
     def _print_and_log_export_message(self, filepath):
         message = "Exported to {}".format(filepath)
@@ -52,8 +50,6 @@ class ExportTrainerCommand(Command):
 
 
 class ImportTrainerCommand(Command):
-    IMPORT_DIR = "import"
-
     def execute(self, trainer):
         commands = [("Return", CloseImportTrainerCommand())]
         json_files = self._get_valid_json_files()
@@ -62,7 +58,7 @@ class ImportTrainerCommand(Command):
         answer["command"].execute(trainer)
 
     def _get_valid_json_files(self):
-        return list(filter(self._is_valid_json_file, os.listdir(self.IMPORT_DIR)))
+        return list(filter(self._is_valid_json_file, os.listdir(IMPORT_DIR)))
 
     def _is_valid_json_file(self, filename):
         return is_valid_json_file(self._get_filepath(filename))
@@ -71,7 +67,7 @@ class ImportTrainerCommand(Command):
         return filename, ImportTrainerFileCommand(self._get_filepath(filename))
 
     def _get_filepath(self, filename):
-        return os.path.join(self.IMPORT_DIR, filename)
+        return os.path.join(IMPORT_DIR, filename)
 
 
 class CloseTrainerBuilderCommand(Command):
