@@ -6,7 +6,7 @@ import inquirer
 
 from commands.interface import Command
 from exceptions import TrainerBuilderCloseException
-from common import is_valid_json_file, load_json_file, EXPORT_DIR, IMPORT_DIR
+from common import is_valid_json_file, load_json_file, EXPORT_DIR, IMPORT_DIR, create_double_logger
 
 
 class PrintTrainerCommand(Command):
@@ -16,7 +16,7 @@ class PrintTrainerCommand(Command):
 
 class ExportTrainerCommand(Command):
     def __init__(self):
-        self._logger = logging.getLogger(__name__)
+        self._logger = create_double_logger(__name__)
 
     def execute(self, trainer):
         filename = self._get_filename(trainer)
@@ -32,18 +32,13 @@ class ExportTrainerCommand(Command):
         with open(filepath, "w") as file:
             json.dump(trainer.properties, file, indent=2)
 
-        self._print_and_log_export_message(filepath)
+        self._logger.info("Exported to {}".format(filepath))
 
     def _get_filename(self, trainer):
         return trainer.name + ".json"
 
     def _get_filepath(self, filename):
         return os.path.join(EXPORT_DIR, filename)
-
-    def _print_and_log_export_message(self, filepath):
-        message = "Exported to {}".format(filepath)
-        print(message)
-        self._logger.debug(message)
 
 
 class ImportTrainerCommand(Command):

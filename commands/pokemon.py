@@ -4,6 +4,7 @@ import logging
 import inquirer
 
 from commands.interface import Command
+from common import create_double_logger
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
     EditSlotCommandCloseException, PokemonLevelInvalidException, PokemonNotExistSlotException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
@@ -73,7 +74,7 @@ class ConfirmAddPokemonCommand(Command):
 
 class AddPokemonCommand(Command):
     def __init__(self):
-        self._logger = logging.getLogger(__name__)
+        self._logger = create_double_logger(__name__)
 
     def execute(self, trainer):
         try:
@@ -82,7 +83,7 @@ class AddPokemonCommand(Command):
             pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
             trainer.properties["team"].append(pokemon)
         except PokemonCreationFailedException as e:
-            self._logger.debug(e.message)
+            self._logger.info(e.message)
 
     def _get_pokemon_name(self):
         answer = inquirer.prompt([inquirer.Text("name", "Pokemon Name")])
@@ -125,14 +126,19 @@ class CloseEditSlotCommand(Command):
 
 class RemovePokemonCommand(Command):
     def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
         self._slot = slot
 
     def execute(self, trainer):
-        answer = inquirer.prompt([inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
+        answer = inquirer.prompt(
+            [inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
+        team = trainer.properties["team"]
+        pokemon = team[self._slot]
         if answer["remove"]:
-            team = trainer.properties["team"]
             team.pop(self._slot)
 
+        self._logger.info("Removed {pokemon} from {trainer}"
+                          .format(pokemon=get_pokemon_name(pokemon).capitalize(), trainer=trainer.name))
         CloseEditSlotCommand().execute(trainer)
 
 

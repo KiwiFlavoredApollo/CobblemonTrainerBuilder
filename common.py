@@ -7,7 +7,8 @@ LOG_DIR = "logs"
 EXPORT_DIR = "export"
 IMPORT_DIR = "import"
 
-logger = logging.getLogger(__name__)
+CONSOLE_HANDLER = logging.StreamHandler()
+CONSOLE_HANDLER.setLevel(logging.INFO)
 
 
 def load_json_file(filepath):
@@ -32,3 +33,12 @@ def _base_path():
         return sys._MEIPASS
     except AttributeError:
         return os.path.abspath(".")
+
+
+def create_double_logger(name):
+    logger = logging.getLogger(name)
+
+    if CONSOLE_HANDLER not in logger.handlers:
+        logger.addHandler(CONSOLE_HANDLER)
+
+    return logger
