@@ -82,6 +82,8 @@ class AddPokemonCommand(Command):
             self._assert_not_empty_string(name)
             pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
             trainer.properties["team"].append(pokemon)
+            cap_name = get_pokemon_name(pokemon).capitalize()
+            self._logger.info("Added {pokemon} to {trainer}".format(pokemon=cap_name, trainer=trainer.name))
         except PokemonCreationFailedException as e:
             self._logger.info(e.message)
 
@@ -137,8 +139,9 @@ class RemovePokemonCommand(Command):
         if answer["remove"]:
             team.pop(self._slot)
 
-        self._logger.info("Removed {pokemon} from {trainer}"
-                          .format(pokemon=get_pokemon_name(pokemon).capitalize(), trainer=trainer.name))
+        cap_name = get_pokemon_name(pokemon).capitalize()
+        self._logger.info("Removed {pokemon} from {trainer}".format(pokemon=cap_name, trainer=trainer.name))
+
         CloseEditSlotCommand().execute(trainer)
 
 
@@ -149,6 +152,7 @@ class CloseEditTeamCommand(Command):
 
 class EditPokemonLevelCommand(Command):
     def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
         self._slot = slot
 
     def execute(self, trainer):
@@ -158,8 +162,10 @@ class EditPokemonLevelCommand(Command):
             level = self._ask_pokemon_level(pokemon)
             assert_valid_pokemon_level(level)
             pokemon["level"] = level
+            cap_name = get_pokemon_name(pokemon).capitalize()
+            self._logger.info("Set level of {pokemon} to {level}".format(pokemon=cap_name, level=level))
         except PokemonLevelInvalidException:
-            pass
+            self._logger.info("Invalid value was given for Pokemon level")
 
     def _ask_pokemon_level(self, pokemon):
         answer = inquirer.prompt([inquirer.Text("level", "Pokemon Level", default=pokemon["level"])])
@@ -168,6 +174,7 @@ class EditPokemonLevelCommand(Command):
 
 class EditPokemonAbilityCommand(Command):
     def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
         self._slot = slot
 
     def execute(self, trainer):
@@ -176,6 +183,8 @@ class EditPokemonAbilityCommand(Command):
         name = get_pokemon_name(pokemon)
         ability = self._ask_pokemon_ability(name)
         pokemon["ability"] = ability
+        cap_name = name.capitalize()
+        self._logger.info("Set ability of {pokemon} to {ability}".format(pokemon=cap_name, ability=ability))
 
     def _ask_pokemon_ability(self, name):
         abilities = PokemonWikiApi().get_pokemon_abilities(name)
@@ -185,34 +194,50 @@ class EditPokemonAbilityCommand(Command):
 
 class EditPokemonNatureCommand(Command):
     def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
         self._slot = slot
 
     def execute(self, trainer):
+        confirm = self._confirm_randomize_nature()
+        if not confirm:
+            return
+
         team = trainer.properties["team"]
         pokemon = team[self._slot]
-        self._randomize_nature(pokemon)
+        nature = select_random_nature()
+        pokemon["nature"] = nature
 
-    def _randomize_nature(self, pokemon):
+        cap_name = get_pokemon_name(pokemon).capitalize()
+        self._logger.info("Set nature of {pokemon} to {nature}".format(pokemon=cap_name, nature=nature))
+
+    def _confirm_randomize_nature(self):
         answer = inquirer.prompt([inquirer.Confirm("confirm", message="Randomize nature?", default=False)])
-        if answer["confirm"]:
-            pokemon["nature"] = select_random_nature()
+        return answer["confirm"]
 
 
 class EditPokemonMovesetCommand(Command):
     def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
         self._slot = slot
 
     def execute(self, trainer):
+        confirm = self._confirm_randomize_moveset()
+        if not confirm:
+            return
+
         team = trainer.properties["team"]
         pokemon = team[self._slot]
-        self._randomize_moveset(pokemon)
+        name = get_pokemon_name(pokemon)
+        moves = PokemonWikiApi().get_pokemon_moves(name)
+        moveset = select_random_moveset(moves)
+        pokemon["moveset"] = moveset
 
-    def _randomize_moveset(self, pokemon):
+        cap_name = get_pokemon_name(pokemon).capitalize()
+        self._logger.info("Set moveset of {pokemon} to {moveset}".format(pokemon=cap_name, moveset=moveset))
+
+    def _confirm_randomize_moveset(self):
         answer = inquirer.prompt([inquirer.Confirm("confirm", message="Randomize moveset?", default=False)])
-        if answer["confirm"]:
-            name = get_pokemon_name(pokemon)
-            moves = PokemonWikiApi().get_pokemon_moves(name)
-            pokemon["moveset"] = select_random_moveset(moves)
+        return answer["confirm"]
 
 
 class PrintPokemonCommand(Command):
@@ -226,6 +251,9 @@ class PrintPokemonCommand(Command):
 
 
 class EditTeamLevelCommand(Command):
+    def __init__(self):
+        self._logger = create_double_logger(__name__)
+
     def execute(self, trainer):
         try:
             level = self._ask_team_level()
@@ -233,8 +261,9 @@ class EditTeamLevelCommand(Command):
             assert_valid_pokemon_level(level)
             for pokemon in team:
                 pokemon["level"] = level
+            self._logger.info("Set team level of {trainer} to {level}".format(trainer=trainer.name, level=level))
         except PokemonLevelInvalidException:
-            pass
+            self._logger.info("Invalid value was given for Pokemon level")
 
     def _ask_team_level(self):
         answer = inquirer.prompt([inquirer.Text("level", "Team Level")])
