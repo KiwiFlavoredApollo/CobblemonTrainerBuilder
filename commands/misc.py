@@ -6,12 +6,12 @@ import inquirer
 
 from commands.interface import Command
 from exceptions import TrainerBuilderCloseException
-from common import is_valid_json_file
+from common import is_valid_json_file, load_json_file
 
 
 class PrintTrainerCommand(Command):
     def execute(self, trainer):
-        print(json.dumps(trainer.properties, indent=4))
+        print(json.dumps(trainer.properties, indent=2))
 
 
 class ExportTrainerCommand(Command):
@@ -35,7 +35,7 @@ class ExportTrainerCommand(Command):
         filepath = self._get_filepath(filename)
 
         with open(filepath, "w") as file:
-            json.dump(trainer.properties, file, indent=4)
+            json.dump(trainer.properties, file, indent=2)
 
         self._print_and_log_export_message(filepath)
 
@@ -89,4 +89,4 @@ class ImportTrainerFileCommand(Command):
         self._filepath = filepath
 
     def execute(self, trainer):
-        trainer.import_from_json_file(self._filepath)
+        trainer.properties = load_json_file(self._filepath)

@@ -9,6 +9,7 @@ from exceptions import PokemonCreationFailedException, EditTeamCommandCloseExcep
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
+from trainer import get_pokemon_names
 
 
 class EditTeamCommand(Command):
@@ -27,11 +28,11 @@ class EditTeamCommand(Command):
     def _create_buttons(self, trainer):
         buttons = self._create_slots(trainer)
         buttons.insert(0, ("Return", CloseEditTeamCommand()))
-        buttons.insert(-1, ("Edit Default", EditDefaultPokemonCommand()))
         return buttons
 
     def _create_slots(self, trainer):
-        slots = [(name.capitalize(), EditSlotCommand(index)) for index, name in enumerate(trainer.get_pokemon_names())]
+        slots = [(name.capitalize(), EditSlotCommand(index))
+                 for index, name in enumerate(get_pokemon_names(trainer))]
         slots = self._fill_empty_slots(slots)
         return slots
 
@@ -55,14 +56,19 @@ class AddPokemonCommand(Command):
     def execute(self, trainer):
         try:
             name = self._get_pokemon_name()
+            self._assert_not_empty_string(name)
             pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
-            trainer.add_pokemon_to_team(pokemon)
+            trainer.properties["team"].append(pokemon)
         except PokemonCreationFailedException as e:
             self._logger.debug(e.message)
 
     def _get_pokemon_name(self):
         answer = inquirer.prompt([inquirer.Text("name", "Pokemon Name")])
         return answer["name"].lower()
+
+    def _assert_not_empty_string(self, string):
+        if string == "":
+            raise PokemonCreationFailedException("Empty string is given for Pokemon name")
 
 
 class EditSlotCommand(Command):
@@ -102,7 +108,10 @@ class RemovePokemonCommand(Command):
     def execute(self, trainer):
         answer = inquirer.prompt([inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
         if answer["remove"]:
-            trainer.remove_pokemon(self._slot)
+            team = trainer.properties["team"]
+            team.pop(self._slot)
+
+        CloseEditSlotCommand().execute(trainer)
 
 
 class CloseEditTeamCommand(Command):
@@ -116,7 +125,8 @@ class EditPokemonLevelCommand(Command):
 
     def execute(self, trainer):
         try:
-            pokemon = trainer.team[self._slot]
+            team = trainer.properties["team"]
+            pokemon = team[self._slot]
             level = self._get_pokemon_level(pokemon)
             assert_valid_pokemon_level(level)
             pokemon["level"] = level
@@ -133,7 +143,8 @@ class EditPokemonAbilityCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pokemon = trainer.team[self._slot]
+        team = trainer.properties["team"]
+        pokemon = team[self._slot]
         name = get_pokemon_name(pokemon)
         ability = self._get_pokemon_ability(name)
         pokemon["ability"] = ability
@@ -149,7 +160,8 @@ class EditPokemonNatureCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pokemon = trainer.team[self._slot]
+        team = trainer.properties["team"]
+        pokemon = team[self._slot]
         self._randomize_nature(pokemon)
 
     def _randomize_nature(self, pokemon):
@@ -163,7 +175,8 @@ class EditPokemonMovesetCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        pokemon = trainer.team[self._slot]
+        team = trainer.properties["team"]
+        pokemon = team[self._slot]
         self._randomize_moveset(pokemon)
 
     def _randomize_moveset(self, pokemon):
@@ -179,5 +192,6 @@ class PrintPokemonCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        json_pretty = json.dumps(trainer.team[self._slot], indent=4)
+        team = trainer.properties["team"]
+        json_pretty = json.dumps(team[self._slot], indent=2)
         print(json_pretty)

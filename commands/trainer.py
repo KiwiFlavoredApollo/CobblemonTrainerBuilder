@@ -1,7 +1,9 @@
 import inquirer
 
 from commands.interface import Command
+from common import load_json_file
 from exceptions import EditTrainerCommandCloseException
+from trainer import DEFAULT_TRAINER_FILENAME
 
 
 class EditTrainerCommand(Command):
@@ -18,7 +20,7 @@ class EditTrainerCommand(Command):
                 ("Reset", ResetTrainerCommand()),
                 ("Rename", RenameTrainerCommand()),
                 ("winCommand", EditWinCommandCommand()),
-                ("canOnlyBeatOnce", EditCanOnlyBeatOnceCommand())
+                ("canOnlyBeatOnce", EditCanOnlyBeatOnceCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("command", "Select to edit", COMMANDS)])
             answer["command"].execute(trainer)
@@ -31,7 +33,7 @@ class CloseEditTrainerCommand(Command):
 
 class ResetTrainerCommand(Command):
     def execute(self, trainer):
-        trainer.reset()
+        trainer.properties = load_json_file(DEFAULT_TRAINER_FILENAME)
 
 
 class RenameTrainerCommand(Command):
@@ -43,11 +45,11 @@ class RenameTrainerCommand(Command):
 class EditWinCommandCommand(Command):
     def execute(self, trainer):
         answer = inquirer.prompt([inquirer.Text("command", "Type winCommand")])
-        trainer.set_win_command(answer["command"])
+        trainer.properties["winCommand"] = answer["command"]
 
 
 class EditCanOnlyBeatOnceCommand(Command):
     def execute(self, trainer):
         answer = inquirer.prompt(
             [inquirer.Confirm("command", message="Should trainer be beaten only once?", default=False)])
-        trainer.set_can_only_beat_once(answer["command"])
+        trainer.properties["canOnlyBeatOnce"] = answer["command"]
