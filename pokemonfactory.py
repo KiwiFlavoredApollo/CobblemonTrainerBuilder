@@ -6,7 +6,7 @@ from exceptions import PokemonGenderlessException, PokemonCreationFailedExceptio
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 
-class PokemonBuilder:
+class PokemonFactory:
     COBBLEMON_PREFIX = "cobblemon:"
     MOVESET_SIZE = 4
     MAX_LEVEL = 100
@@ -44,7 +44,7 @@ class PokemonBuilder:
         return random.randint(self.MIN_LEVEL, self.MAX_LEVEL)
 
     def _create_random_nature(self):
-        return PokemonBuilder.select_random_nature()
+        return PokemonFactory.select_random_nature()
 
     @staticmethod
     def select_random_nature():
@@ -55,7 +55,7 @@ class PokemonBuilder:
             "modest", "mild", "quiet", "bashful", "rash",
             "calm", "gentle", "sassy", "careful", "quirky"
         ]
-        return PokemonBuilder.COBBLEMON_PREFIX + random.choice(NATURES)
+        return PokemonFactory.COBBLEMON_PREFIX + random.choice(NATURES)
 
     def _create_random_ability(self, name):
         abilities = self._api.get_pokemon_abilities(name)
@@ -78,19 +78,19 @@ class PokemonBuilder:
 
     def _create_random_moveset(self, name):
         moves = self._api.get_pokemon_moves(name)
-        return PokemonBuilder.select_random_moveset(moves)
+        return PokemonFactory.select_random_moveset(moves)
 
     @staticmethod
     def select_random_moveset(moves):
         try:
-            PokemonBuilder._assert_exist_enough_moves(moves)
-            return random.sample(moves, PokemonBuilder.MOVESET_SIZE)
+            PokemonFactory._assert_exist_enough_moves(moves)
+            return random.sample(moves, PokemonFactory.MOVESET_SIZE)
         except MovesNotEnoughExistException as e:
             return e.moves
 
     @staticmethod
     def _assert_exist_enough_moves(moves):
-        if len(moves) < PokemonBuilder.MOVESET_SIZE:
+        if len(moves) < PokemonFactory.MOVESET_SIZE:
             raise MovesNotEnoughExistException(moves)
 
     def _create_empty_evs(self):
@@ -118,9 +118,9 @@ class PokemonBuilder:
 
     @staticmethod
     def assert_valid_pokemon_level(level):
-        if not PokemonBuilder.MIN_LEVEL <= level <= PokemonBuilder.MAX_LEVEL:
+        if not PokemonFactory.MIN_LEVEL <= level <= PokemonFactory.MAX_LEVEL:
             raise PokemonLevelInvalidException
 
     @staticmethod
     def get_pokemon_name(pokemon):
-        return pokemon["species"].replace(PokemonBuilder.COBBLEMON_PREFIX, "")
+        return pokemon["species"].replace(PokemonFactory.COBBLEMON_PREFIX, "")
