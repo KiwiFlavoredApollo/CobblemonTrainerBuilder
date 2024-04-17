@@ -1,6 +1,6 @@
 import logging
 
-from common import load_json_file
+from common import load_json_file, resource_path
 from exceptions import PokemonNotExistSlotException
 from pokemonbuilder import PokemonBuilder
 
@@ -18,7 +18,7 @@ class Trainer:
 
     def __init__(self, name):
         self.name = name
-        self.properties = load_json_file(self.DEFAULT_TRAINER_FILENAME)
+        self.properties = load_json_file(resource_path(self.DEFAULT_TRAINER_FILENAME))
 
         self._logger = logging.getLogger(__name__)
 
