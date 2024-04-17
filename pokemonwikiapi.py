@@ -19,10 +19,6 @@ class PokemonWikiApi(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def assert_exist_connection(self):
-        raise NotImplementedError
-
-    @abstractmethod
     def assert_exist_pokemon(self, name):
         raise NotImplementedError
 
@@ -60,9 +56,12 @@ class PokeApi(PokemonWikiApi):
             raise requests.RequestException
 
     def _get_response_from_internet_and_save_to_database(self, url):
-        response = requests.get(url)
-        self._db.save_request(response)
-        return response.json()
+        try:
+            response = requests.get(url)
+            self._db.save_request(response)
+            return response.json()
+        except requests.ConnectionError:
+            raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
 
     def _get_ability_name(self, ability):
         return ability["ability"]["name"].replace("-", "")
@@ -75,13 +74,6 @@ class PokeApi(PokemonWikiApi):
             safe_guess = False
             self._logger.debug("Failed to request pokemon gender info from PokeAPI")
             return safe_guess
-
-    def assert_exist_connection(self):
-        try:
-            # TODO getting responses from cache does not make sense
-            self._get_response(self.API_POKEMON_SPECIES_URL_PREFIX)
-        except requests.ConnectionError:
-            raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
 
     def assert_exist_pokemon(self, name):
         try:

@@ -28,7 +28,6 @@ class RandomizedPokemonFactory(PokemonFactory):
 
     def create(self, name):
         try:
-            self._api.assert_exist_connection()
             self._api.assert_exist_pokemon(name)
             return self._create_pokemon(name)
         except PokemonWikiConnectionNotExistException as e:
