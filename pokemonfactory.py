@@ -6,7 +6,7 @@ from exceptions import PokemonGenderlessException, PokemonCreationFailedExceptio
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 
-class PokemonFactory:
+class RandomizedPokemonFactory:
     COBBLEMON_PREFIX = "cobblemon:"
     MOVESET_SIZE = 4
     MAX_LEVEL = 100
@@ -44,7 +44,7 @@ class PokemonFactory:
         return random.randint(self.MIN_LEVEL, self.MAX_LEVEL)
 
     def _create_random_nature(self):
-        return PokemonFactory.select_random_nature()
+        return RandomizedPokemonFactory.select_random_nature()
 
     @staticmethod
     def select_random_nature():
@@ -55,7 +55,7 @@ class PokemonFactory:
             "modest", "mild", "quiet", "bashful", "rash",
             "calm", "gentle", "sassy", "careful", "quirky"
         ]
-        return PokemonFactory.COBBLEMON_PREFIX + random.choice(NATURES)
+        return RandomizedPokemonFactory.COBBLEMON_PREFIX + random.choice(NATURES)
 
     def _create_random_ability(self, name):
         abilities = self._api.get_pokemon_abilities(name)
@@ -78,19 +78,19 @@ class PokemonFactory:
 
     def _create_random_moveset(self, name):
         moves = self._api.get_pokemon_moves(name)
-        return PokemonFactory.select_random_moveset(moves)
+        return RandomizedPokemonFactory.select_random_moveset(moves)
 
     @staticmethod
     def select_random_moveset(moves):
         try:
-            PokemonFactory._assert_exist_enough_moves(moves)
-            return random.sample(moves, PokemonFactory.MOVESET_SIZE)
+            RandomizedPokemonFactory._assert_exist_enough_moves(moves)
+            return random.sample(moves, RandomizedPokemonFactory.MOVESET_SIZE)
         except MovesNotEnoughExistException as e:
             return e.moves
 
     @staticmethod
     def _assert_exist_enough_moves(moves):
-        if len(moves) < PokemonFactory.MOVESET_SIZE:
+        if len(moves) < RandomizedPokemonFactory.MOVESET_SIZE:
             raise MovesNotEnoughExistException(moves)
 
     def _create_empty_evs(self):
@@ -118,9 +118,9 @@ class PokemonFactory:
 
     @staticmethod
     def assert_valid_pokemon_level(level):
-        if not PokemonFactory.MIN_LEVEL <= level <= PokemonFactory.MAX_LEVEL:
+        if not RandomizedPokemonFactory.MIN_LEVEL <= level <= RandomizedPokemonFactory.MAX_LEVEL:
             raise PokemonLevelInvalidException
 
     @staticmethod
     def get_pokemon_name(pokemon):
-        return pokemon["species"].replace(PokemonFactory.COBBLEMON_PREFIX, "")
+        return pokemon["species"].replace(RandomizedPokemonFactory.COBBLEMON_PREFIX, "")
