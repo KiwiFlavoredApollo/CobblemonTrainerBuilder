@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/CobblemonTrainersBuilder.iml" filepath="$PROJECT_DIR$/.idea/CobblemonTrainersBuilder.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/CobblemonTrainersGenerator.iml" filepath="$PROJECT_DIR$/.idea/CobblemonTrainersGenerator.iml" />
     </modules>
   </component>
 </project>
