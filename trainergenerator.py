@@ -9,7 +9,7 @@ from exceptions import TrainerBuilderCloseException
 from trainer import Trainer
 
 
-class TrainerBuilder:
+class TrainerGenerator:
     def __init__(self):
         self._logger = logging.getLogger(__name__)
         self._trainer = Trainer("trainer")

@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 
-from trainerbuilder import TrainerBuilder
+from trainergenerator import TrainerGenerator
 
 LOG_DIR = "logs"
 EXPORT_DIR = "export"
@@ -37,4 +37,4 @@ logging.basicConfig(filename=get_log_filepath(),
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    TrainerBuilder().open_trainer_builder_prompt()
+    TrainerGenerator().open_trainer_builder_prompt()
