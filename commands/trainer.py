@@ -51,4 +51,3 @@ class EditCanOnlyBeatOnceCommand(Command):
         answer = inquirer.prompt(
             [inquirer.Confirm("command", message="Should trainer be beaten only once?", default=False)])
         trainer.set_can_only_beat_once(answer["command"])
-
