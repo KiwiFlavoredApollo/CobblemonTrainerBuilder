@@ -1,67 +1,80 @@
 import logging
 import random
+from abc import ABC, abstractmethod
 
+from common import load_json_file, resource_path
 from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException, \
     PokemonLevelInvalidException
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
+DEFAULT_POKEMON_FILEPATH = "defaults/pokemon.json"
+MOVESET_SIZE = 4
+MAX_LEVEL = 100
+MIN_LEVEL = 1
+COBBLEMON_PREFIX = "cobblemon:"
 
-class RandomizedPokemonFactory:
-    COBBLEMON_PREFIX = "cobblemon:"
-    MOVESET_SIZE = 4
-    MAX_LEVEL = 100
-    MIN_LEVEL = 1
 
+class PokemonFactory(ABC):
+    @abstractmethod
+    def create(self, name):
+        raise NotImplementedError
+
+
+class RandomizedPokemonFactory(PokemonFactory):
     def __init__(self, api):
         self._logger = logging.getLogger(__name__)
         self._api = api
+        self._default = load_json_file(resource_path(DEFAULT_POKEMON_FILEPATH))
 
-    def create_pokemon(self, name):
+    def create(self, name):
         try:
             self._api.assert_exist_connection()
             self._api.assert_exist_pokemon(name)
-            return self._create_random_pokemon(name)
+            return self._create_pokemon(name)
         except PokemonWikiConnectionNotExistException as e:
             raise PokemonCreationFailedException(e.message)
         except PokemonNotExistException as e:
             raise PokemonCreationFailedException(e.message)
 
-    def _create_pokemon_species(self, name):
-        return self.COBBLEMON_PREFIX + name
+    def _create_pokemon(self, name):
+        return {
+            "species": self._create_species(name),
+            "gender": self._create_gender(name),
+            "level": self._create_level(),
+            "nature": self._create_nature(),
+            "ability": self._create_ability(name),
+            "moveset": self._create_moveset(name),
+            "ivs": self._create_ivs(),
+            "evs": self._create_evs(),
+            "shiny": self._create_shiny(),
+            "heldItem": self._create_held_item()
+        }
 
-    def _create_random_gender(self, name):
+    def _create_species(self, name):
+        return COBBLEMON_PREFIX + name
+
+    def _create_gender(self, name):
         try:
             self._assert_not_pokemon_genderless(name)
             return random.choice(["MALE", "FEMALE"])
         except PokemonGenderlessException:
-            return "GENDERLESS"
+            return "GENDERLESS"  # needs confirm
 
     def _assert_not_pokemon_genderless(self, name):
         if self._api.is_pokemon_genderless(name):
             raise PokemonGenderlessException
 
-    def _create_random_level(self):
-        return random.randint(self.MIN_LEVEL, self.MAX_LEVEL)
+    def _create_level(self):
+        return self._default["level"]
 
-    def _create_random_nature(self):
-        return RandomizedPokemonFactory.select_random_nature()
+    def _create_nature(self):
+        return select_random_nature()
 
-    @staticmethod
-    def select_random_nature():
-        NATURES = [
-            "hardy", "lonely", "brave", "adamant", "naughty",
-            "bold", "docile", "relaxed", "impish", "lax",
-            "timid", "hasty", "serious", "jolly", "naive",
-            "modest", "mild", "quiet", "bashful", "rash",
-            "calm", "gentle", "sassy", "careful", "quirky"
-        ]
-        return RandomizedPokemonFactory.COBBLEMON_PREFIX + random.choice(NATURES)
-
-    def _create_random_ability(self, name):
+    def _create_ability(self, name):
         abilities = self._api.get_pokemon_abilities(name)
         return random.choice(abilities)
 
-    def _create_random_ivs(self):
+    def _create_ivs(self):
         return {
             "hp": self._create_random_iv_value(),
             "attack": self._create_random_iv_value(),
@@ -76,51 +89,52 @@ class RandomizedPokemonFactory:
         MAX_IV_VALUE = 31
         return random.randint(MIN_IV_VALUE, MAX_IV_VALUE)
 
-    def _create_random_moveset(self, name):
+    def _create_moveset(self, name):
         moves = self._api.get_pokemon_moves(name)
-        return RandomizedPokemonFactory.select_random_moveset(moves)
+        return select_random_moveset(moves)
 
-    @staticmethod
-    def select_random_moveset(moves):
-        try:
-            RandomizedPokemonFactory._assert_exist_enough_moves(moves)
-            return random.sample(moves, RandomizedPokemonFactory.MOVESET_SIZE)
-        except MovesNotEnoughExistException as e:
-            return e.moves
+    def _create_evs(self):
+        return self._default["evs"]
 
-    @staticmethod
-    def _assert_exist_enough_moves(moves):
-        if len(moves) < RandomizedPokemonFactory.MOVESET_SIZE:
-            raise MovesNotEnoughExistException(moves)
+    def _create_shiny(self):
+        return self._default["shiny"]
 
-    def _create_empty_evs(self):
-        return {}
+    def _create_held_item(self):
+        return self._default["heldItem"]
 
-    def _create_non_shiny(self):
-        return False
 
-    def _create_empty_held_item(self):
-        return "minecraft:air"
+def select_random_nature():
+    NATURES = [
+        "hardy", "lonely", "brave", "adamant", "naughty",
+        "bold", "docile", "relaxed", "impish", "lax",
+        "timid", "hasty", "serious", "jolly", "naive",
+        "modest", "mild", "quiet", "bashful", "rash",
+        "calm", "gentle", "sassy", "careful", "quirky"
+    ]
+    return COBBLEMON_PREFIX + random.choice(NATURES)
 
-    def _create_random_pokemon(self, name):
-        return {
-            "species": self._create_pokemon_species(name),
-            "gender": self._create_random_gender(name),
-            "level": self._create_random_level(),
-            "nature": self._create_random_nature(),
-            "ability": self._create_random_ability(name),
-            "moveset": self._create_random_moveset(name),
-            "ivs": self._create_random_ivs(),
-            "evs": self._create_empty_evs(),
-            "shiny": self._create_non_shiny(),
-            "heldItem": self._create_empty_held_item()
-        }
 
-    @staticmethod
-    def assert_valid_pokemon_level(level):
-        if not RandomizedPokemonFactory.MIN_LEVEL <= level <= RandomizedPokemonFactory.MAX_LEVEL:
-            raise PokemonLevelInvalidException
+def assert_valid_pokemon_level(level):
+    if not MIN_LEVEL <= level <= MAX_LEVEL:
+        raise PokemonLevelInvalidException
 
-    @staticmethod
-    def get_pokemon_name(pokemon):
-        return pokemon["species"].replace(RandomizedPokemonFactory.COBBLEMON_PREFIX, "")
+
+def get_random_pokemon_level():
+    return random.randint(MIN_LEVEL, MAX_LEVEL)
+
+
+def get_pokemon_name(pokemon):
+    return pokemon["species"].replace(COBBLEMON_PREFIX, "")
+
+
+def select_random_moveset(moves):
+    try:
+        _assert_exist_enough_moves(moves)
+        return random.sample(moves, MOVESET_SIZE)
+    except MovesNotEnoughExistException as e:
+        return e.moves
+
+
+def _assert_exist_enough_moves(moves):
+    if len(moves) < MOVESET_SIZE:
+        raise MovesNotEnoughExistException(moves)

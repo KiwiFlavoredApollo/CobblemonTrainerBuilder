@@ -2,7 +2,7 @@ import logging
 
 from common import load_json_file, resource_path
 from exceptions import PokemonNotExistSlotException
-from pokemonfactory import RandomizedPokemonFactory
+from pokemonfactory import get_pokemon_name
 
 
 class Trainer:
@@ -28,7 +28,7 @@ class Trainer:
     def get_pokemon_names(self):
         names = []
         for pokemon in self.properties[self.TEAM]:
-            names.append(RandomizedPokemonFactory.get_pokemon_name(pokemon))
+            names.append(get_pokemon_name(pokemon))
         return names
 
     def set_win_command(self, win_command):
