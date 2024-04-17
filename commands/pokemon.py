@@ -29,7 +29,7 @@ class EditTeamCommand(Command):
                 (self._get_button_name(team, 3), self._get_button_command(team, 3)),
                 (self._get_button_name(team, 4), self._get_button_command(team, 4)),
                 (self._get_button_name(team, 5), self._get_button_command(team, 5)),
-                ("TeamLevel", EditTeamLevelCommand()),
+                ("Team Level", EditTeamLevelCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("button", "Select Pokemon", buttons)])
             answer["button"].execute(trainer)
