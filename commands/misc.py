@@ -26,9 +26,6 @@ class ExportTrainerCommand(Command):
             self._export_json_file(trainer)
 
     def _export_json_file(self, trainer):
-        if not os.path.exists(EXPORT_DIR):
-            os.makedirs(EXPORT_DIR)
-
         filename = self._get_filename(trainer)
         filepath = self._get_filepath(filename)
 
