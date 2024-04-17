@@ -2,7 +2,8 @@ import inquirer
 
 from commands.interface import Command
 from common import load_json_file
-from exceptions import EditTrainerCommandCloseException
+from exceptions import EditTrainerCommandCloseException, PokemonLevelInvalidException
+from pokemonfactory import assert_valid_pokemon_level
 from trainer import DEFAULT_TRAINER_FILENAME
 
 
@@ -20,7 +21,10 @@ class EditTrainerCommand(Command):
                 ("Reset", ResetTrainerCommand()),
                 ("Rename", RenameTrainerCommand()),
                 ("winCommand", EditWinCommandCommand()),
+                ("lossCommand", EditLossCommandCommand()),
                 ("canOnlyBeatOnce", EditCanOnlyBeatOnceCommand()),
+                ("cooldownSeconds", EditCooldownSecondsCommand()),
+                ("partyMaximumLevel", EditPartyMaximumLevelCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("command", "Select to edit", COMMANDS)])
             answer["command"].execute(trainer)
@@ -46,6 +50,12 @@ class EditWinCommandCommand(Command):
     def execute(self, trainer):
         answer = inquirer.prompt([inquirer.Text("command", "Type winCommand")])
         trainer.properties["winCommand"] = answer["command"]
+        
+        
+class EditLossCommandCommand(Command):
+    def execute(self, trainer):
+        answer = inquirer.prompt([inquirer.Text("command", "Type lossCommand")])
+        trainer.properties["lossCommand"] = answer["command"]
 
 
 class EditCanOnlyBeatOnceCommand(Command):
@@ -53,3 +63,24 @@ class EditCanOnlyBeatOnceCommand(Command):
         answer = inquirer.prompt(
             [inquirer.Confirm("command", message="Should trainer be beaten only once?", default=False)])
         trainer.properties["canOnlyBeatOnce"] = answer["command"]
+
+
+class EditCooldownSecondsCommand(Command):
+    def execute(self, trainer):
+        try:
+            answer = inquirer.prompt([inquirer.Text("cooldown", "Type cooldownSeconds")])
+            cooldown = int(answer["cooldown"])
+            trainer.properties["cooldownSeconds"] = cooldown
+        except ValueError:
+            pass
+
+
+class EditPartyMaximumLevelCommand(Command):
+    def execute(self, trainer):
+        try:
+            answer = inquirer.prompt([inquirer.Text("level", "Type partyMaximumLevel")])
+            level = int(answer["level"])
+            assert_valid_pokemon_level(level)
+            trainer.properties["partyMaximumLevel"] = level
+        except PokemonLevelInvalidException:
+            pass
