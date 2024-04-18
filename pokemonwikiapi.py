@@ -8,8 +8,8 @@ from json import JSONDecodeError
 import requests
 
 from common import create_double_logger, CooldownTimer
-from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, DatabaseRowNotExistException, \
-    GenerationIxPokemonException, CooldownNotElapsedException
+from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, \
+    CachedResponseNotExistException, GenerationIxPokemonException
 
 
 class PokemonWikiApi(ABC):
@@ -41,7 +41,7 @@ class PokeApi(PokemonWikiApi):
 
     def __init__(self):
         self._logger = create_double_logger(__name__)
-        self._db = Sqlite3("pokeapi")
+        self._database = Sqlite3("pokeapi")
         self._timer = CooldownTimer(self.COOLDOWN_SECONDS)
 
     def get_pokemon_abilities(self, name):
@@ -56,31 +56,33 @@ class PokeApi(PokemonWikiApi):
     def _get_response(self, url):
         try:
             return self._get_response_from_database(url)
-        except DatabaseRowNotExistException:
+        except CachedResponseNotExistException:
             return self._get_response_from_internet_and_save_to_database(url)
 
     def _get_response_from_database(self, url):
         try:
-            return json.loads(self._db.load_request(url))
+            return json.loads(self._database.load_request(url))
         except JSONDecodeError:
             raise requests.RequestException
 
     def _get_response_from_internet_and_save_to_database(self, url):
-        while True:
-            try:
-                self._assert_elapsed_cooldown()
-                response = requests.get(url)
-                self._timer.reset()
-                self._db.save_request(response)
-                return response.json()
-            except CooldownNotElapsedException:
-                pass
-            except requests.ConnectionError:
-                raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
+        response = self._get_response_from_internet_after_cooldown_elapsed(url)
+        self._database.save_request(response)
+        return response.json()
 
-    def _assert_elapsed_cooldown(self):
-        if not self._timer.is_elapsed_cooldown():
-            raise CooldownNotElapsedException
+    def _get_response_from_internet_after_cooldown_elapsed(self, url):
+        while not self._timer.is_elapsed_cooldown():
+            pass
+
+        response = self._get_response_from_internet(url)
+        self._timer.reset()
+        return response
+
+    def _get_response_from_internet(self, url):
+        try:
+            return requests.get(url)
+        except requests.ConnectionError:
+            raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
 
     def _get_ability_name(self, ability):
         return ability["ability"]["name"].replace("-", "")
@@ -209,7 +211,7 @@ class Sqlite3(Database):
         cursor.close()
 
         if self._is_not_exist_result(result):
-            raise DatabaseRowNotExistException
+            raise CachedResponseNotExistException
         return result[0]
 
     def _is_not_exist_result(self, result):
