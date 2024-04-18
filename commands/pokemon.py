@@ -31,6 +31,7 @@ class EditTeamCommand(Command):
                 (self._get_button_name(team, 4), self._get_button_command(team, 4)),
                 (self._get_button_name(team, 5), self._get_button_command(team, 5)),
                 ("Team Level", EditTeamLevelCommand()),
+                ("Random Team", GenerateRandomTeamCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("button", "Select Pokemon", buttons)])
             answer["button"].execute(trainer)
@@ -268,3 +269,16 @@ class EditTeamLevelCommand(Command):
     def _ask_team_level(self):
         answer = inquirer.prompt([inquirer.Text("level", "Team Level")])
         return int(answer["level"])
+
+
+class GenerateRandomTeamCommand(Command):
+    def execute(self, trainer):
+        api = PokemonWikiApi()
+        trainer.properties["team"] = [
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
+        ]

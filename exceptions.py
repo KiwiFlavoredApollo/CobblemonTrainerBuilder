@@ -52,3 +52,7 @@ class CachedRequestNotExistException(Exception):
 
 class DatabaseRowNotExistException(Exception):
     pass
+
+
+class GenerationIxPokemonException(Exception):
+    pass

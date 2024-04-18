@@ -1,12 +1,15 @@
 import json
-import logging
+import random
 import sqlite3
+import urllib.parse
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 
 import requests
 
-from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, DatabaseRowNotExistException
+from common import create_double_logger
+from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, DatabaseRowNotExistException, \
+    GenerationIxPokemonException
 
 
 class PokemonWikiApi(ABC):
@@ -26,13 +29,17 @@ class PokemonWikiApi(ABC):
     def get_pokemon_moves(self, name):
         raise NotImplementedError
 
+    @abstractmethod
+    def get_random_pokemon_name(self):
+        raise NotImplementedError
+
 
 class PokeApi(PokemonWikiApi):
     API_POKEMON_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon/"
     API_POKEMON_SPECIES_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon-species/"
 
     def __init__(self):
-        self._logger = logging.getLogger(__name__)
+        self._logger = create_double_logger(__name__)
         self._db = Sqlite3("pokeapi")
 
     def get_pokemon_abilities(self, name):
@@ -97,6 +104,38 @@ class PokeApi(PokemonWikiApi):
             move_names.append(without_hyphen)
         return move_names
 
+    def get_random_pokemon_name(self):
+        return self._get_random_pokemon_name_except_generation_ix()
+
+    def _get_random_pokemon_name_except_generation_ix(self):
+        while True:
+            try:
+                index = self._get_random_pokemon_index()
+                url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, str(index))
+                pokemon = self._get_response(url)
+                name = pokemon["species"]["name"]
+                self._assert_not_generation_ix(name)
+                return name.replace("-", "")
+            except GenerationIxPokemonException:
+                pass
+
+    def _get_random_pokemon_index(self):
+        count = self._get_maximum_pokemon_count()
+        return random.randint(1, count)
+
+    def _get_maximum_pokemon_count(self):
+        response = self._get_response(self.API_POKEMON_URL_PREFIX)
+        return response["count"]
+
+    def _assert_not_generation_ix(self, name):
+        if self._get_pokemon_generation(name) == "generation-ix":
+            raise GenerationIxPokemonException
+
+    def _get_pokemon_generation(self, name):
+        url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
+        response = self._get_response(url)
+        return response["generation"]["name"]
+
 
 class Database(ABC):
     @abstractmethod
@@ -153,7 +192,7 @@ class Sqlite3(Database):
         result = cursor.fetchone()
 
         cursor.close()
-        
+
         if self._is_not_exist_result(result):
             raise DatabaseRowNotExistException
         return result[0]
