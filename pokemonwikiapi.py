@@ -74,9 +74,12 @@ class PokeApi(PokemonWikiApi):
             raise ApiRequestFailedException("API request failed to {url}".format(url=url))
 
     def _get_response_from_internet_and_save_to_database(self, url):
-        response = self._get_response_from_internet_after_cooldown_elapsed(url)
-        self._database.save_response(response)
-        return response.json()
+        try:
+            response = self._get_response_from_internet_after_cooldown_elapsed(url)
+            self._database.save_response(response)
+            return response.json()
+        except JSONDecodeError:
+            raise ApiRequestFailedException("API request failed to {url}".format(url=url))
 
     def _get_response_from_internet_after_cooldown_elapsed(self, url):
         while not self._timer.is_elapsed_cooldown():
