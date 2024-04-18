@@ -15,6 +15,11 @@ class EditTeamCommandCloseException(Exception):
     pass
 
 
+class PokemonNameEmptyException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
 class PokemonWikiConnectionNotExistException(Exception):
     def __init__(self, message):
         self.message = message
@@ -55,4 +60,8 @@ class DatabaseRowNotExistException(Exception):
 
 
 class GenerationIxPokemonException(Exception):
+    pass
+
+
+class CooldownNotElapsedException(Exception):
     pass
