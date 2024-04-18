@@ -61,13 +61,13 @@ class PokeApi(PokemonWikiApi):
 
     def _get_response_from_database(self, url):
         try:
-            return json.loads(self._database.load_request(url))
+            return json.loads(self._database.load_response(url))
         except JSONDecodeError:
             raise requests.RequestException
 
     def _get_response_from_internet_and_save_to_database(self, url):
         response = self._get_response_from_internet_after_cooldown_elapsed(url)
-        self._database.save_request(response)
+        self._database.save_response(response)
         return response.json()
 
     def _get_response_from_internet_after_cooldown_elapsed(self, url):
@@ -156,11 +156,11 @@ class PokeApi(PokemonWikiApi):
 
 class Database(ABC):
     @abstractmethod
-    def save_request(self, request):
+    def save_response(self, request):
         raise NotImplementedError
 
     @abstractmethod
-    def load_request(self, url):
+    def load_response(self, url):
         raise NotImplementedError
 
 
@@ -178,7 +178,7 @@ class Sqlite3(Database):
                        "(url TEXT PRIMARY KEY, response TEXT)".format(table=self._table))
         cursor.close()
 
-    def save_request(self, response):
+    def save_response(self, response):
         try:
             self._insert_row(response)
         except sqlite3.IntegrityError:
@@ -202,7 +202,7 @@ class Sqlite3(Database):
 
         cursor.close()
 
-    def load_request(self, url):
+    def load_response(self, url):
         cursor = self._conn.cursor()
 
         cursor.execute("SELECT response FROM {table} WHERE url=?".format(table=self._table), (url,))
