@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from common import load_json_file, resource_path
 from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException, \
-    PokemonLevelInvalidException, PokemonNameEmptyException
+    InvalidPokemonLevelException, InvalidPokemonNameException
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 DEFAULT_POKEMON_FILEPATH = "defaults/pokemon.json"
@@ -28,19 +28,21 @@ class RandomizedPokemonFactory(PokemonFactory):
 
     def create(self, name):
         try:
-            self._assert_not_empty_name(name)
+            self._assert_valid_pokemon_name(name)
             self._api.assert_exist_pokemon(name)
             return self._create_pokemon(name)
-        except PokemonNameEmptyException as e:
+        except InvalidPokemonNameException as e:
             raise PokemonCreationFailedException(e.message)
         except PokemonWikiConnectionNotExistException as e:
             raise PokemonCreationFailedException(e.message)
         except PokemonNotExistException as e:
             raise PokemonCreationFailedException(e.message)
 
-    def _assert_not_empty_name(self, name):
+    def _assert_valid_pokemon_name(self, name):
         if name == "":
-            raise PokemonNameEmptyException("Empty string is given for Pokemon name")
+            raise InvalidPokemonNameException("Pokemon's name cannot be empty string")
+        if name.isdigit():
+            raise InvalidPokemonNameException("Pokemon's name cannot be number string")
 
     def _create_pokemon(self, name):
         return {
@@ -122,7 +124,7 @@ def select_random_nature():
 
 def assert_valid_pokemon_level(level):
     if not MIN_LEVEL <= level <= MAX_LEVEL:
-        raise PokemonLevelInvalidException
+        raise InvalidPokemonLevelException
 
 
 def get_random_pokemon_level():

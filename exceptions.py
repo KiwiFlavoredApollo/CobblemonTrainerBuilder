@@ -15,7 +15,7 @@ class EditTeamCommandCloseException(Exception):
     pass
 
 
-class PokemonNameEmptyException(Exception):
+class InvalidPokemonNameException(Exception):
     def __init__(self, message):
         self.message = message
 
@@ -47,7 +47,7 @@ class EditPokemonCommandCloseException(Exception):
     pass
 
 
-class PokemonLevelInvalidException(Exception):
+class InvalidPokemonLevelException(Exception):
     pass
 
 

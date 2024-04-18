@@ -2,7 +2,7 @@ import inquirer
 
 from commands.interface import Command
 from common import load_json_file, create_double_logger
-from exceptions import EditTrainerCommandCloseException, PokemonLevelInvalidException
+from exceptions import EditTrainerCommandCloseException, InvalidPokemonLevelException
 from pokemonfactory import assert_valid_pokemon_level
 from trainer import DEFAULT_TRAINER_FILENAME
 
@@ -110,5 +110,5 @@ class EditPartyMaximumLevelCommand(Command):
             assert_valid_pokemon_level(level)
             trainer.properties["partyMaximumLevel"] = level
             self._logger.info("Set partyMaximumLevel to {level}".format(level=level))
-        except PokemonLevelInvalidException:
+        except InvalidPokemonLevelException:
             self._logger.info("Invalid value was given for Pokemon level")

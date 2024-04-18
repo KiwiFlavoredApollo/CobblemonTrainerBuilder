@@ -5,7 +5,7 @@ import inquirer
 from commands.interface import Command
 from common import create_double_logger
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditPokemonCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException, TrainerTeamFullException
+    EditPokemonCommandCloseException, InvalidPokemonLevelException, EmptyPokemonSlotException, TrainerTeamFullException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
@@ -199,7 +199,7 @@ class EditPokemonLevelCommand(Command):
             pokemon["level"] = level
             cap_name = get_pokemon_name(pokemon).capitalize()
             self._logger.info("Set level of {pokemon} to {level}".format(pokemon=cap_name, level=level))
-        except PokemonLevelInvalidException:
+        except InvalidPokemonLevelException:
             self._logger.info("Invalid value was given for Pokemon level")
 
     def _ask_pokemon_level(self, pokemon):
@@ -295,7 +295,7 @@ class EditTeamLevelCommand(Command):
             for pokemon in team:
                 pokemon["level"] = level
             self._logger.info("Set team level of {trainer} to {level}".format(trainer=trainer.name, level=level))
-        except PokemonLevelInvalidException:
+        except InvalidPokemonLevelException:
             self._logger.info("Invalid value was given for Pokemon level")
 
     def _ask_team_level(self):
