@@ -20,14 +20,13 @@ class InvalidPokemonNameException(Exception):
         self.message = message
 
 
-class PokemonWikiConnectionNotExistException(Exception):
+class ApiRequestFailedException(Exception):
     def __init__(self, message):
         self.message = message
 
 
-class PokemonNotExistException(Exception):
-    def __init__(self, message):
-        self.message = message
+class PokemonSpeciesNotExistException(Exception):
+    pass
 
 
 class MovesNotEnoughExistException(Exception):
@@ -56,8 +55,4 @@ class CachedResponseNotExistException(Exception):
 
 
 class GenerationIxPokemonException(Exception):
-    pass
-
-
-class TrainerTeamFullException(Exception):
     pass

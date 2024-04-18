@@ -2,10 +2,10 @@ import logging
 import random
 from abc import ABC, abstractmethod
 
-from common import load_json_file, resource_path
+from common import load_json_file, resource_path, to_lowercase
 from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException, \
-    InvalidPokemonLevelException, InvalidPokemonNameException
-from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
+    InvalidPokemonLevelException, InvalidPokemonNameException, PokemonSpeciesNotExistException
+from pokemonwikiapi import ApiRequestFailedException
 
 DEFAULT_POKEMON_FILEPATH = "defaults/pokemon.json"
 MOVESET_SIZE = 4
@@ -29,14 +29,11 @@ class RandomizedPokemonFactory(PokemonFactory):
     def create(self, name):
         try:
             self._assert_valid_pokemon_name(name)
-            self._api.assert_exist_pokemon(name)
-            return self._create_pokemon(name)
+            return self._create_pokemon(to_lowercase(name))
         except InvalidPokemonNameException as e:
             raise PokemonCreationFailedException(e.message)
-        except PokemonWikiConnectionNotExistException as e:
-            raise PokemonCreationFailedException(e.message)
-        except PokemonNotExistException as e:
-            raise PokemonCreationFailedException(e.message)
+        except PokemonSpeciesNotExistException:
+            raise PokemonCreationFailedException("Pokemon {} does not exist".format(name.capitalize()))
 
     def _assert_valid_pokemon_name(self, name):
         if name == "":
@@ -59,14 +56,22 @@ class RandomizedPokemonFactory(PokemonFactory):
         }
 
     def _create_species(self, name):
-        return COBBLEMON_PREFIX + name.replace("-", "")
+        try:
+            self._api.assert_exist_pokemon_species(name)
+            return COBBLEMON_PREFIX + name.replace("-", "")
+        except ApiRequestFailedException as e:
+            self._logger.info(e.message)
+            raise PokemonSpeciesNotExistException
 
     def _create_gender(self, name):
         try:
             self._assert_not_pokemon_genderless(name)
             return random.choice(["MALE", "FEMALE"])
         except PokemonGenderlessException:
-            return "GENDERLESS"  # needs confirm
+            return "GENDERLESS"
+        except ApiRequestFailedException as e:
+            self._logger.info(e.message)
+            return self._default["gender"]
 
     def _assert_not_pokemon_genderless(self, name):
         if self._api.is_pokemon_genderless(name):
@@ -79,8 +84,12 @@ class RandomizedPokemonFactory(PokemonFactory):
         return select_random_nature()
 
     def _create_ability(self, name):
-        abilities = self._api.get_pokemon_abilities(name)
-        return random.choice(abilities)
+        try:
+            abilities = self._api.get_pokemon_abilities(name)
+            return random.choice(abilities)
+        except ApiRequestFailedException as e:
+            self._logger.info(e.message)
+            return self._default["ability"]
 
     def _create_ivs(self):
         return {
@@ -98,8 +107,12 @@ class RandomizedPokemonFactory(PokemonFactory):
         return random.randint(MIN_IV_VALUE, MAX_IV_VALUE)
 
     def _create_moveset(self, name):
-        moves = self._api.get_pokemon_moves(name)
-        return select_random_moveset(moves)
+        try:
+            moves = self._api.get_pokemon_moves(name)
+            return select_random_moveset(moves)
+        except ApiRequestFailedException as e:
+            self._logger.info(e.message)
+            return self._default["moveset"]
 
     def _create_evs(self):
         return self._default["evs"]

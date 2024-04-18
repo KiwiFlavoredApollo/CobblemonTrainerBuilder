@@ -8,21 +8,20 @@ from json import JSONDecodeError
 import requests
 
 from common import create_double_logger, CooldownTimer
-from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, \
-    CachedResponseNotExistException, GenerationIxPokemonException
+from exceptions import ApiRequestFailedException, CachedResponseNotExistException, GenerationIxPokemonException
 
 
 class PokemonWikiApi(ABC):
+    @abstractmethod
+    def assert_exist_pokemon_species(self, name):
+        raise NotImplementedError
+
     @abstractmethod
     def get_pokemon_abilities(self, name):
         raise NotImplementedError
 
     @abstractmethod
     def is_pokemon_genderless(self, name):
-        raise NotImplementedError
-
-    @abstractmethod
-    def assert_exist_pokemon(self, name):
         raise NotImplementedError
 
     @abstractmethod
@@ -35,7 +34,6 @@ class PokemonWikiApi(ABC):
 
 
 class PokeApi(PokemonWikiApi):
-    API_POKEMON_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon/"
     API_POKEMON_SPECIES_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon-species/"
     COOLDOWN_SECONDS = 1
 
@@ -44,14 +42,24 @@ class PokeApi(PokemonWikiApi):
         self._database = Sqlite3("pokeapi")
         self._timer = CooldownTimer(self.COOLDOWN_SECONDS)
 
+    def assert_exist_pokemon_species(self, name):
+        url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
+        self._get_response(url)
+
     def get_pokemon_abilities(self, name):
-        EMPTY_ABILITIES = [""]
-        try:
-            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
-            pokemon = self._get_response(url)
-            return [self._get_ability_name(a) for a in pokemon["abilities"]]
-        except requests.RequestException:
-            return EMPTY_ABILITIES
+        url = self._get_pokemon_url(name)
+        pokemon = self._get_response(url)
+
+        return [self._get_ability_name(a) for a in pokemon["abilities"]]
+
+    def _get_pokemon_url(self, name):
+        pokemon_species_url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
+        pokemon_species = self._get_response(pokemon_species_url)
+        default_variety = self._get_default_variety(pokemon_species["varieties"])
+        return default_variety["pokemon"]["url"]
+
+    def _get_default_variety(self, varieties):
+        return next(filter(lambda v: v["is_default"], varieties))
 
     def _get_response(self, url):
         try:
@@ -63,7 +71,7 @@ class PokeApi(PokemonWikiApi):
         try:
             return json.loads(self._database.load_response(url))
         except JSONDecodeError:
-            raise requests.RequestException
+            raise ApiRequestFailedException("API request failed to {url}".format(url=url))
 
     def _get_response_from_internet_and_save_to_database(self, url):
         response = self._get_response_from_internet_after_cooldown_elapsed(url)
@@ -81,37 +89,21 @@ class PokeApi(PokemonWikiApi):
     def _get_response_from_internet(self, url):
         try:
             return requests.get(url)
-        except requests.ConnectionError:
-            raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
+        except requests.RequestException:
+            raise ApiRequestFailedException("API request failed to {url}".format(url=url))
 
     def _get_ability_name(self, ability):
         return ability["ability"]["name"].replace("-", "")
 
     def is_pokemon_genderless(self, name):
-        try:
-            url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
-            pokemon = self._get_response(url)
-            return pokemon["gender_rate"] == -1
-        except requests.RequestException:
-            safe_guess = False
-            self._logger.debug("Failed to request pokemon gender info from PokeAPI")
-            return safe_guess
-
-    def assert_exist_pokemon(self, name):
-        try:
-            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
-            self._get_response(url)
-        except requests.RequestException:
-            raise PokemonNotExistException("Pokemon {} does not exist".format(name.capitalize()))
+        url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
+        pokemon = self._get_response(url)
+        return pokemon["gender_rate"] == -1
 
     def get_pokemon_moves(self, name):
-        DEFAULT_MOVESET = ["tackle"]
-        try:
-            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
-            pokemon = self._get_response(url)
-            return self._get_move_names(pokemon["moves"])
-        except requests.RequestException:
-            return DEFAULT_MOVESET
+        url = self._get_pokemon_url(name)
+        pokemon = self._get_response(url)
+        return self._get_move_names(pokemon["moves"])
 
     def _get_move_names(self, moves):
         move_names = []
@@ -125,6 +117,11 @@ class PokeApi(PokemonWikiApi):
         return self._get_random_pokemon_name_except_generation_ix()
 
     def _get_random_pokemon_name_except_generation_ix(self):
+        '''
+        Cobblemon does not have Pokemons introduced in The Indigo Disc DLC
+        PokeAPI does not provide any means to distinguish non-DLC Gen.9 Pokemons
+        :return:
+        '''
         while True:
             try:
                 index = self._get_random_pokemon_index()
