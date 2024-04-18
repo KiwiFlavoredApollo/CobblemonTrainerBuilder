@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+import time
 
 LOG_DIR = "logs"
 EXPORT_DIR = "export"
@@ -42,3 +43,18 @@ def create_double_logger(name):
         logger.addHandler(CONSOLE_HANDLER)
 
     return logger
+
+
+class CooldownTimer:
+    def __init__(self, cooldown):
+        self._cooldown = cooldown
+        self._timestamp = time.time()
+        self._logger = create_double_logger(__name__)
+
+    def is_elapsed_cooldown(self):
+        elapsed_time = time.time() - self._timestamp
+        return elapsed_time > self._cooldown
+
+    def reset(self):
+        self._timestamp = time.time()
+        self._logger.debug("Reset cooldown timer")

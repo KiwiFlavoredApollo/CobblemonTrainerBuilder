@@ -7,9 +7,9 @@ from json import JSONDecodeError
 
 import requests
 
-from common import create_double_logger
+from common import create_double_logger, CooldownTimer
 from exceptions import PokemonWikiConnectionNotExistException, PokemonNotExistException, DatabaseRowNotExistException, \
-    GenerationIxPokemonException
+    GenerationIxPokemonException, CooldownNotElapsedException
 
 
 class PokemonWikiApi(ABC):
@@ -37,15 +37,18 @@ class PokemonWikiApi(ABC):
 class PokeApi(PokemonWikiApi):
     API_POKEMON_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon/"
     API_POKEMON_SPECIES_URL_PREFIX = "https://pokeapi.co/api/v2/pokemon-species/"
+    COOLDOWN_SECONDS = 1
 
     def __init__(self):
         self._logger = create_double_logger(__name__)
         self._db = Sqlite3("pokeapi")
+        self._timer = CooldownTimer(self.COOLDOWN_SECONDS)
 
     def get_pokemon_abilities(self, name):
         EMPTY_ABILITIES = [""]
         try:
-            pokemon = self._get_response(self.API_POKEMON_URL_PREFIX + name)
+            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
+            pokemon = self._get_response(url)
             return [self._get_ability_name(a) for a in pokemon["abilities"]]
         except requests.RequestException:
             return EMPTY_ABILITIES
@@ -63,19 +66,29 @@ class PokeApi(PokemonWikiApi):
             raise requests.RequestException
 
     def _get_response_from_internet_and_save_to_database(self, url):
-        try:
-            response = requests.get(url)
-            self._db.save_request(response)
-            return response.json()
-        except requests.ConnectionError:
-            raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
+        while True:
+            try:
+                self._assert_elapsed_cooldown()
+                response = requests.get(url)
+                self._timer.reset()
+                self._db.save_request(response)
+                return response.json()
+            except CooldownNotElapsedException:
+                pass
+            except requests.ConnectionError:
+                raise PokemonWikiConnectionNotExistException("Cannot connect to PokeAPI")
+
+    def _assert_elapsed_cooldown(self):
+        if not self._timer.is_elapsed_cooldown():
+            raise CooldownNotElapsedException
 
     def _get_ability_name(self, ability):
         return ability["ability"]["name"].replace("-", "")
 
     def is_pokemon_genderless(self, name):
         try:
-            pokemon = self._get_response(self.API_POKEMON_SPECIES_URL_PREFIX + name)
+            url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, name)
+            pokemon = self._get_response(url)
             return pokemon["gender_rate"] == -1
         except requests.RequestException:
             safe_guess = False
@@ -84,14 +97,16 @@ class PokeApi(PokemonWikiApi):
 
     def assert_exist_pokemon(self, name):
         try:
-            self._get_response(self.API_POKEMON_URL_PREFIX + name)
+            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
+            self._get_response(url)
         except requests.RequestException:
-            raise PokemonNotExistException("Pokemon {} does not exist".format(name))
+            raise PokemonNotExistException("Pokemon {} does not exist".format(name.capitalize()))
 
     def get_pokemon_moves(self, name):
         DEFAULT_MOVESET = ["tackle"]
         try:
-            pokemon = self._get_response(self.API_POKEMON_URL_PREFIX + name)
+            url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, name)
+            pokemon = self._get_response(url)
             return self._get_move_names(pokemon["moves"])
         except requests.RequestException:
             return DEFAULT_MOVESET
@@ -111,9 +126,9 @@ class PokeApi(PokemonWikiApi):
         while True:
             try:
                 index = self._get_random_pokemon_index()
-                url = urllib.parse.urljoin(self.API_POKEMON_URL_PREFIX, str(index))
+                url = urllib.parse.urljoin(self.API_POKEMON_SPECIES_URL_PREFIX, str(index))
                 pokemon = self._get_response(url)
-                name = pokemon["species"]["name"]
+                name = pokemon["name"]
                 self._assert_not_generation_ix(name)
                 return name.replace("-", "")
             except GenerationIxPokemonException:
@@ -124,7 +139,7 @@ class PokeApi(PokemonWikiApi):
         return random.randint(1, count)
 
     def _get_maximum_pokemon_count(self):
-        response = self._get_response(self.API_POKEMON_URL_PREFIX)
+        response = self._get_response(self.API_POKEMON_SPECIES_URL_PREFIX)
         return response["count"]
 
     def _assert_not_generation_ix(self, name):
