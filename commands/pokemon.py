@@ -6,7 +6,7 @@ import inquirer
 from commands.interface import Command
 from common import create_double_logger
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException, PokemonLevelInvalidException, PokemonNotExistSlotException
+    EditSlotCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
@@ -40,14 +40,14 @@ class EditTeamCommand(Command):
             self._assert_exist_pokemon(team, slot)
             cap_name = self._get_capitalized_pokemon_name(team, slot)
             return self._prepend_slot_number(cap_name, slot)
-        except PokemonNotExistSlotException:
+        except EmptyPokemonSlotException:
             return self._prepend_slot_number("Empty", slot)
 
     def _assert_exist_pokemon(self, team, slot):
         try:
             team[slot]
         except IndexError:
-            raise PokemonNotExistSlotException
+            raise EmptyPokemonSlotException
 
     def _prepend_slot_number(self, string, slot):
         delimiter = " "
@@ -61,7 +61,7 @@ class EditTeamCommand(Command):
         try:
             self._assert_exist_pokemon(team, slot)
             return EditSlotCommand(slot)
-        except PokemonNotExistSlotException:
+        except EmptyPokemonSlotException:
             return AddPokemonCommand()
 
 

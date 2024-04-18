@@ -34,7 +34,7 @@ class EditTrainerCommandCloseException(Exception):
     pass
 
 
-class PokemonNotExistSlotException(Exception):
+class EmptyPokemonSlotException(Exception):
     pass
 
 
