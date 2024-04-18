@@ -3,6 +3,7 @@ export/
 logs/
 *.db
 TODO.md
+NOTES.md
 
 # pyinstaller
 dist/
