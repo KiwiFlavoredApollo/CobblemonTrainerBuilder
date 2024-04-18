@@ -5,7 +5,7 @@ import inquirer
 from commands.interface import Command
 from common import create_double_logger
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException, TrainerTeamFullException
+    EditPokemonCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException, TrainerTeamFullException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
@@ -59,7 +59,7 @@ class EditTeamCommand(Command):
     def _get_button_command(self, team, slot):
         try:
             self._assert_exist_pokemon(team, slot)
-            return EditSlotCommand(slot)
+            return EditPokemonCommand(slot)
         except EmptyPokemonSlotException:
             return AddPokemonCommand()
 
@@ -114,20 +114,20 @@ class AddRandomPokemonCommand(Command):
             self._logger.info(e.message)
 
 
-class EditSlotCommand(Command):
+class EditPokemonCommand(Command):
     def __init__(self, slot):
         self._slot = slot
 
     def execute(self, trainer):
         try:
             self._edit_slot(trainer)
-        except EditSlotCommandCloseException:
+        except EditPokemonCommandCloseException:
             pass
 
     def _edit_slot(self, trainer):
         while True:
             COMMANDS = [
-                ("Return", CloseEditSlotCommand()),
+                ("Return", CloseEditPokemonCommand()),
                 ("Print", PrintPokemonCommand(self._slot)),
                 ("Level", EditPokemonLevelCommand(self._slot)),
                 ("Ability", EditPokemonAbilityCommand(self._slot)),
@@ -139,9 +139,9 @@ class EditSlotCommand(Command):
             answer["command"].execute(trainer)
 
 
-class CloseEditSlotCommand(Command):
+class CloseEditPokemonCommand(Command):
     def execute(self, trainer):
-        raise EditSlotCommandCloseException
+        raise EditPokemonCommandCloseException
 
 
 class RemovePokemonCommand(Command):
@@ -157,7 +157,7 @@ class RemovePokemonCommand(Command):
         cap_name = get_pokemon_name(pokemon).capitalize()
         self._logger.info("Removed {pokemon} from {trainer}".format(pokemon=cap_name, trainer=trainer.name))
 
-        CloseEditSlotCommand().execute(trainer)
+        CloseEditPokemonCommand().execute(trainer)
 
     def _confirm_remove_pokemon(self):
         answer = inquirer.prompt([inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])

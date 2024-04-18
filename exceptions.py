@@ -43,7 +43,7 @@ class EmptyPokemonSlotException(Exception):
     pass
 
 
-class EditSlotCommandCloseException(Exception):
+class EditPokemonCommandCloseException(Exception):
     pass
 
 
