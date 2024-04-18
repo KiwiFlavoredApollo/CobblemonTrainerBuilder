@@ -15,20 +15,17 @@ class TrainerGenerator:
         self._trainer = Trainer("trainer")
 
     def run(self):
-        try:
-            self._open_command_prompt()
-        except CommandPromptCloseException:
-            pass
-
-    def _open_command_prompt(self):
         while True:
-            COMMANDS = [
-                ("Print", PrintTrainerCommand()),
-                ("Trainer", EditTrainerCommand()),
-                ("Pokemon", EditTeamCommand()),
-                ("Export", ExportTrainerCommand()),
-                ("Import", ImportTrainerCommand()),
-                ("Close", CloseCommandPromptCommand())
-            ]
-            answer = inquirer.prompt([inquirer.List("command", "Select command", COMMANDS)])
-            answer["command"].execute(self._trainer)
+            try:
+                COMMANDS = [
+                    ("Print", PrintTrainerCommand()),
+                    ("Trainer", EditTrainerCommand()),
+                    ("Pokemon", EditTeamCommand()),
+                    ("Export", ExportTrainerCommand()),
+                    ("Import", ImportTrainerCommand()),
+                    ("Close", CloseCommandPromptCommand())
+                ]
+                answer = inquirer.prompt([inquirer.List("command", "Select command", COMMANDS)])
+                answer["command"].execute(self._trainer)
+            except CommandPromptCloseException:
+                return
