@@ -1,5 +1,4 @@
 import json
-import logging
 
 import inquirer
 
@@ -31,7 +30,7 @@ class EditTeamCommand(Command):
                 (self._get_button_name(team, 4), self._get_button_command(team, 4)),
                 (self._get_button_name(team, 5), self._get_button_command(team, 5)),
                 ("Team Level", EditTeamLevelCommand()),
-                ("Random Team", GenerateRandomTeamCommand()),
+                ("Random Team", ConfirmGenerateRandomTeamCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("button", "Select Pokemon", buttons)])
             answer["button"].execute(trainer)
@@ -80,7 +79,6 @@ class AddPokemonCommand(Command):
     def execute(self, trainer):
         try:
             name = self._get_pokemon_name()
-            self._assert_not_empty_string(name)
             pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
             trainer.properties["team"].append(pokemon)
             cap_name = get_pokemon_name(pokemon).capitalize()
@@ -91,10 +89,6 @@ class AddPokemonCommand(Command):
     def _get_pokemon_name(self):
         answer = inquirer.prompt([inquirer.Text("name", "Pokemon Name")])
         return answer["name"].lower()
-
-    def _assert_not_empty_string(self, string):
-        if string == "":
-            raise PokemonCreationFailedException("Empty string is given for Pokemon name")
 
 
 class EditSlotCommand(Command):
@@ -116,7 +110,7 @@ class EditSlotCommand(Command):
                 ("Ability", EditPokemonAbilityCommand(self._slot)),
                 ("Nature", EditPokemonNatureCommand(self._slot)),
                 ("Moveset", EditPokemonMovesetCommand(self._slot)),
-                ("Remove", RemovePokemonCommand(self._slot))
+                ("Remove", ConfirmRemovePokemonCommand(self._slot))
             ]
             answer = inquirer.prompt([inquirer.List("command", "Select action", COMMANDS)])
             answer["command"].execute(trainer)
@@ -133,17 +127,34 @@ class RemovePokemonCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        answer = inquirer.prompt(
-            [inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
         team = trainer.properties["team"]
         pokemon = team[self._slot]
-        if answer["remove"]:
-            team.pop(self._slot)
+        team.pop(self._slot)
 
         cap_name = get_pokemon_name(pokemon).capitalize()
         self._logger.info("Removed {pokemon} from {trainer}".format(pokemon=cap_name, trainer=trainer.name))
 
         CloseEditSlotCommand().execute(trainer)
+
+    def _confirm_remove_pokemon(self):
+        answer = inquirer.prompt([inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
+        return answer["remove"]
+
+
+class ConfirmRemovePokemonCommand(Command):
+    def __init__(self, slot):
+        self._logger = create_double_logger(__name__)
+        self._slot = slot
+
+    def execute(self, trainer):
+        if not self._confirm_remove_pokemon():
+            return
+
+        RemovePokemonCommand(self._slot).execute(trainer)
+
+    def _confirm_remove_pokemon(self):
+        answer = inquirer.prompt([inquirer.Confirm("remove", message="Remove this pokemon?", default=False)])
+        return answer["remove"]
 
 
 class CloseEditTeamCommand(Command):
@@ -199,8 +210,7 @@ class EditPokemonNatureCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        confirm = self._confirm_randomize_nature()
-        if not confirm:
+        if not self._confirm_randomize_nature():
             return
 
         team = trainer.properties["team"]
@@ -222,8 +232,7 @@ class EditPokemonMovesetCommand(Command):
         self._slot = slot
 
     def execute(self, trainer):
-        confirm = self._confirm_randomize_moveset()
-        if not confirm:
+        if not self._confirm_randomize_moveset():
             return
 
         team = trainer.properties["team"]
@@ -272,6 +281,9 @@ class EditTeamLevelCommand(Command):
 
 
 class GenerateRandomTeamCommand(Command):
+    def __init__(self):
+        self._logger = create_double_logger(__name__)
+
     def execute(self, trainer):
         api = PokemonWikiApi()
         trainer.properties["team"] = [
@@ -282,3 +294,17 @@ class GenerateRandomTeamCommand(Command):
             RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
             RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
         ]
+        self._logger.info("Successfully generated a new team")
+
+
+class ConfirmGenerateRandomTeamCommand(Command):
+    def execute(self, trainer):
+        if not self._confirm_generate_random_team():
+            return
+
+        GenerateRandomTeamCommand().execute(trainer)
+
+    def _confirm_generate_random_team(self):
+        message = "Generate random team? (All Pokemons will be overridden and this task takes about a minute)"
+        answer = inquirer.prompt([inquirer.Confirm("confirm", message=message, default=False)])
+        return answer["confirm"]

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from common import load_json_file, resource_path
 from exceptions import PokemonGenderlessException, PokemonCreationFailedException, MovesNotEnoughExistException, \
-    PokemonLevelInvalidException
+    PokemonLevelInvalidException, PokemonNameEmptyException
 from pokemonwikiapi import PokemonNotExistException, PokemonWikiConnectionNotExistException
 
 DEFAULT_POKEMON_FILEPATH = "defaults/pokemon.json"
@@ -28,12 +28,19 @@ class RandomizedPokemonFactory(PokemonFactory):
 
     def create(self, name):
         try:
+            self._assert_not_empty_name(name)
             self._api.assert_exist_pokemon(name)
             return self._create_pokemon(name)
+        except PokemonNameEmptyException as e:
+            raise PokemonCreationFailedException(e.message)
         except PokemonWikiConnectionNotExistException as e:
             raise PokemonCreationFailedException(e.message)
         except PokemonNotExistException as e:
             raise PokemonCreationFailedException(e.message)
+
+    def _assert_not_empty_name(self, name):
+        if name == "":
+            raise PokemonNameEmptyException("Empty string is given for Pokemon name")
 
     def _create_pokemon(self, name):
         return {
@@ -50,7 +57,7 @@ class RandomizedPokemonFactory(PokemonFactory):
         }
 
     def _create_species(self, name):
-        return COBBLEMON_PREFIX + name
+        return COBBLEMON_PREFIX + name.replace("-", "")
 
     def _create_gender(self, name):
         try:
