@@ -5,7 +5,7 @@ import inquirer
 from commands.interface import Command
 from common import create_double_logger
 from exceptions import PokemonCreationFailedException, EditTeamCommandCloseException, \
-    EditSlotCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException
+    EditSlotCommandCloseException, PokemonLevelInvalidException, EmptyPokemonSlotException, TrainerTeamFullException
 from pokemonfactory import RandomizedPokemonFactory, assert_valid_pokemon_level, \
     get_pokemon_name, select_random_nature, select_random_moveset
 from pokemonwikiapi import PokeApi as PokemonWikiApi
@@ -30,7 +30,6 @@ class EditTeamCommand(Command):
                 (self._get_button_name(team, 4), self._get_button_command(team, 4)),
                 (self._get_button_name(team, 5), self._get_button_command(team, 5)),
                 ("Team Level", EditTeamLevelCommand()),
-                ("Random Team", ConfirmGenerateRandomTeamCommand()),
             ]
             answer = inquirer.prompt([inquirer.List("button", "Select Pokemon", buttons)])
             answer["button"].execute(trainer)
@@ -65,20 +64,29 @@ class EditTeamCommand(Command):
             return AddPokemonCommand()
 
 
-class ConfirmAddPokemonCommand(Command):
-    def execute(self, trainer):
-        answer = inquirer.prompt([inquirer.Confirm("add", message="Add Pokemon?", default=False)])
-        if answer["add"]:
-            AddPokemonCommand().execute(trainer)
-
-
 class AddPokemonCommand(Command):
+    def execute(self, trainer):
+        COMMANDS = [
+            ("Return", CloseAddPokemonCommand()),
+            ("Name", AddPokemonByNameCommand()),
+            ("Random", AddRandomPokemonCommand()),
+        ]
+        answer = inquirer.prompt([inquirer.List("command", "Select command", COMMANDS)])
+        answer["command"].execute(trainer)
+
+
+class CloseAddPokemonCommand(Command):
+    def execute(self, trainer):
+        pass
+
+
+class AddPokemonByNameCommand(Command):
     def __init__(self):
         self._logger = create_double_logger(__name__)
 
     def execute(self, trainer):
         try:
-            name = self._get_pokemon_name()
+            name = self._ask_pokemon_name()
             pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
             trainer.properties["team"].append(pokemon)
             cap_name = get_pokemon_name(pokemon).capitalize()
@@ -86,9 +94,24 @@ class AddPokemonCommand(Command):
         except PokemonCreationFailedException as e:
             self._logger.info(e.message)
 
-    def _get_pokemon_name(self):
+    def _ask_pokemon_name(self):
         answer = inquirer.prompt([inquirer.Text("name", "Pokemon Name")])
         return answer["name"].lower()
+
+
+class AddRandomPokemonCommand(Command):
+    def __init__(self):
+        self._logger = create_double_logger(__name__)
+
+    def execute(self, trainer):
+        try:
+            name = PokemonWikiApi().get_random_pokemon_name()
+            pokemon = RandomizedPokemonFactory(PokemonWikiApi()).create(name)
+            trainer.properties["team"].append(pokemon)
+            cap_name = get_pokemon_name(pokemon).capitalize()
+            self._logger.info("Added {pokemon} to {trainer}".format(pokemon=cap_name, trainer=trainer.name))
+        except PokemonCreationFailedException as e:
+            self._logger.info(e.message)
 
 
 class EditSlotCommand(Command):
@@ -278,33 +301,3 @@ class EditTeamLevelCommand(Command):
     def _ask_team_level(self):
         answer = inquirer.prompt([inquirer.Text("level", "Team Level")])
         return int(answer["level"])
-
-
-class GenerateRandomTeamCommand(Command):
-    def __init__(self):
-        self._logger = create_double_logger(__name__)
-
-    def execute(self, trainer):
-        api = PokemonWikiApi()
-        trainer.properties["team"] = [
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-            RandomizedPokemonFactory(api).create(api.get_random_pokemon_name()),
-        ]
-        self._logger.info("Successfully generated a new team")
-
-
-class ConfirmGenerateRandomTeamCommand(Command):
-    def execute(self, trainer):
-        if not self._confirm_generate_random_team():
-            return
-
-        GenerateRandomTeamCommand().execute(trainer)
-
-    def _confirm_generate_random_team(self):
-        message = "Generate random team? (All Pokemons will be overridden and this task takes about a minute)"
-        answer = inquirer.prompt([inquirer.Confirm("confirm", message=message, default=False)])
-        return answer["confirm"]
