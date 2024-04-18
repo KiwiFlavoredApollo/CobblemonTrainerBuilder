@@ -45,6 +45,13 @@ def create_double_logger(name):
     return logger
 
 
+def to_lowercase(string):
+    if len(string) > 0:
+        return string[0].lower() + string[1:]
+    else:
+        return string
+
+
 class CooldownTimer:
     def __init__(self, cooldown):
         self._cooldown = cooldown
