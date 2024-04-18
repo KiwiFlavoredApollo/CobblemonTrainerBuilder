@@ -1,4 +1,4 @@
-class TrainerBuilderCloseException(Exception):
+class CommandPromptCloseException(Exception):
     pass
 
 

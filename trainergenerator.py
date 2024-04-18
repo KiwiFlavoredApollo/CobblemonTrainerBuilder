@@ -2,10 +2,10 @@ import logging
 
 import inquirer
 
-from commands.misc import PrintTrainerCommand, CloseTrainerBuilderCommand, ExportTrainerCommand, ImportTrainerCommand
+from commands.misc import PrintTrainerCommand, CloseCommandPromptCommand, ExportTrainerCommand, ImportTrainerCommand
 from commands.pokemon import EditTeamCommand
 from commands.trainer import EditTrainerCommand
-from exceptions import TrainerBuilderCloseException
+from exceptions import CommandPromptCloseException
 from trainer import Trainer
 
 
@@ -17,7 +17,7 @@ class TrainerGenerator:
     def run(self):
         try:
             self._open_command_prompt()
-        except TrainerBuilderCloseException:
+        except CommandPromptCloseException:
             pass
 
     def _open_command_prompt(self):
@@ -28,7 +28,7 @@ class TrainerGenerator:
                 ("Pokemon", EditTeamCommand()),
                 ("Export", ExportTrainerCommand()),
                 ("Import", ImportTrainerCommand()),
-                ("Close", CloseTrainerBuilderCommand())
+                ("Close", CloseCommandPromptCommand())
             ]
             answer = inquirer.prompt([inquirer.List("command", "Select command", COMMANDS)])
             answer["command"].execute(self._trainer)

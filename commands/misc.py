@@ -5,7 +5,7 @@ import os
 import inquirer
 
 from commands.interface import Command
-from exceptions import TrainerBuilderCloseException
+from exceptions import CommandPromptCloseException
 from common import is_valid_json_file, load_json_file, EXPORT_DIR, IMPORT_DIR, create_double_logger
 
 
@@ -62,9 +62,9 @@ class ImportTrainerCommand(Command):
         return os.path.join(IMPORT_DIR, filename)
 
 
-class CloseTrainerBuilderCommand(Command):
+class CloseCommandPromptCommand(Command):
     def execute(self, trainer):
-        raise TrainerBuilderCloseException
+        raise CommandPromptCloseException
 
 
 class CloseImportTrainerCommand(Command):
