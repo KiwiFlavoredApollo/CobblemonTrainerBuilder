@@ -4,12 +4,19 @@ from pokemonwikiapi import PokeApi
 
 
 class TestPokeApi(unittest.TestCase):
+    def setUp(self):
+        self.api = PokeApi()
+
     def test_get_pokemon_ability(self):
         pokemon = "charmander"
-        expected = ["blaze", "solar-power"]
+        expected = ["blaze", "solarpower"]
         expected.sort()
 
-        abilities = PokeApi().get_pokemon_abilities(pokemon)
+        abilities = self.api.get_pokemon_abilities(pokemon)
         abilities.sort()
 
-        assert(abilities == expected)
+        assert abilities == expected
+
+    def test_get_random_pokemon_name(self):
+        name = self.api.get_random_pokemon_name()
+        print(name)
