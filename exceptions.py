@@ -51,11 +51,7 @@ class PokemonLevelInvalidException(Exception):
     pass
 
 
-class CachedRequestNotExistException(Exception):
-    pass
-
-
-class DatabaseRowNotExistException(Exception):
+class CachedResponseNotExistException(Exception):
     pass
 
 
@@ -63,5 +59,5 @@ class GenerationIxPokemonException(Exception):
     pass
 
 
-class CooldownNotElapsedException(Exception):
+class TrainerTeamFullException(Exception):
     pass
